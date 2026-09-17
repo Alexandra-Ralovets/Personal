@@ -1,0 +1,2897 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowMeet · прототип мобильного приложения</title>
+
+<script>
+/* ДИАГНОСТИКА ЗАГРУЗКИ. Ставится ДО стилей и основного скрипта: если скрипт не
+   исполнился, страница выглядит просто недогруженной, а плашка называет причину. */
+window.__fmDiag = { err: null, ran: false };
+(function () {
+  function banner(title, detail) {
+    var d = document.createElement('div');
+    d.setAttribute('style', 'position:fixed;left:0;right:0;top:0;z-index:99999;'
+      + 'padding:12px 16px;background:#fff1f0;border-bottom:1px solid #ffa39e;'
+      + 'color:#a8071a;font:14px/20px system-ui,sans-serif');
+    d.innerHTML = '<strong>' + title + '</strong><br><span style="color:#595959">' + detail + '</span>';
+    (document.body || document.documentElement).appendChild(d);
+  }
+  window.__fmBanner = banner;
+  window.addEventListener('error', function (e) {
+    if (window.__fmDiag.err) return;
+    window.__fmDiag.err = e;
+    banner('Скрипт страницы не выполнился — интерфейс не собрался',
+      (e.message || 'ошибка') + ' · ' + (e.filename || '') + ':' + (e.lineno || ''));
+  }, true);
+  window.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      if (window.__fmDiag.ran || window.__fmDiag.err) return;
+      banner('Скрипт страницы не запустился',
+        'Разбор дошёл до конца, но код не выполнился. Обычно это блокировка встроенных'
+        + ' скриптов расширением браузера или политикой.');
+    }, 1500);
+  });
+})();
+</script>
+
+<link rel="stylesheet" href="ds-core-tokens.css">
+
+<style>
+/* ============================================================================
+   МОБИЛЬНЫЙ ПРОТОТИП FlowMeet — ВЫБРОС.
+
+   ЦВЕТ, РАДИУСЫ И ШРИФТ — из корпоративного канона Proceset Mini Apps
+   (токены `ds-core-tokens.css`, симлинк на файл-владелец в скилле miniapp-ui).
+   Литералов цвета нет.
+
+   КЕГЛЬ И РИТМ — мобильные, и это ЧЕТВЁРТОЕ сознательное отклонение от канона:
+   канон писан под веб, там базовый текст 14px и плотные строки. На телефоне так
+   нельзя — интерфейс читается как уменьшенная веб-страница, а не как приложение.
+   Поэтому здесь своя шкала (.m-*): базовый текст 17, вторичный 15, подпись 13,
+   крупный заголовок экрана 34 — как в системных приложениях телефона. Семейство
+   и насыщенности — канонические.
+
+   Отклонения от канона, все сознательные (он писан под mini-app в портале):
+   1. Нижняя панель навигации — в вебе канон её не описывает, на телефоне это
+      главный навигатор.
+   2. Своя верхняя панель экрана с крупным заголовком.
+   3. Шторки снизу вместо модальных окон.
+   4. Мобильная шкала кегля и ритма (см. выше).
+
+   Соответствие компонентам antd подписано у блоков — карта переноса в код.
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: 'Roboto', system-ui, sans-serif;   /* служебная плашка вне корпуса */
+  background: var(--bg-secondary); color: var(--text-primary);
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; padding: var(--size-6x) 0 var(--size-10x);
+}
+
+/* ─── Мобильная шкала текста. Только размеры и насыщенность; семейство и цвет
+       канонические. ─────────────────────────────────────────────────────────── */
+.m-large   { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -.4px; }
+.m-title   { font-size: 22px; line-height: 28px; font-weight: 600; letter-spacing: -.2px; }
+.m-head    { font-size: 17px; line-height: 22px; font-weight: 600; }
+.m-body    { font-size: 17px; line-height: 24px; font-weight: 400; }
+.m-sub     { font-size: 15px; line-height: 20px; font-weight: 400; }
+.m-cap     { font-size: 13px; line-height: 18px; font-weight: 400; }
+.m-tiny    { font-size: 11px; line-height: 13px; font-weight: 500; }
+.m-num     { font-variant-numeric: tabular-nums; }
+/* Пометка «это ДАННЫЕ, а не интерфейс»: названия записей и папок остаются на
+   языке разговора, и проверка языка их не считает непереведённой строкой. */
+.m-data    { }
+ /* Приглушённый текст ОДИН на прототип: у канона читаемая вторичная ступень
+       одна (--text-complimentary, замерено 7,0:1 и 8,96:1), а --text-secondary
+       и --text-hint дают 3,4:1 и 1,8:1 — ниже нормы для подписи. Второго класса
+       приглушённого больше нет: он был бы дублем с тем же цветом. */
+.m-dim     { color: var(--text-complimentary); }
+
+/* Плашка над телефоном — служебная, к продукту не относится. */
+.fm-plaque {
+  display: flex; align-items: center; gap: var(--space-l); flex-wrap: wrap;
+  justify-content: center; margin-bottom: var(--size-5x); padding: 0 var(--padding-l);
+  color: var(--text-complimentary); font-size: 13px;
+}
+.fm-plaque__tag {
+  padding: 2px var(--padding-m); border-radius: var(--radius-m);
+  background: var(--tag-orange-bg); color: var(--tag-orange-text);
+}
+.fm-plaque__switch { display: flex; gap: var(--space-xs); }
+.fm-plaque__switch button {
+  padding: var(--padding-s) var(--padding-l); border-radius: var(--radius-m);
+  border: 1px solid var(--line-border); background: var(--bg-container);
+  font-family: inherit; font-size: 13px; color: var(--text-complimentary); cursor: pointer;
+}
+.fm-plaque__switch button.is-on { background: var(--primary-bg); color: var(--primary-active); border-color: var(--primary-border); }
+
+/* ─────────────────────────── КОРПУС ТЕЛЕФОНА ─────────────────────────────── */
+/* Семейство шрифта — платформенное: у Apple системный San Francisco, у Google
+   Roboto. В контейнере нет ни того, ни другого, поэтому проверять кегль надо
+   относительными величинами, а не по пикселю в рендере. */
+[data-os="ios"] { font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', system-ui, sans-serif; }
+[data-os="android"] { font-family: 'Roboto', system-ui, sans-serif; }
+
+.fm-phone {
+  width: 393px; height: 852px; flex: 0 0 auto; position: relative;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg-secondary); color: var(--text-primary);
+  /* Рамка корпуса — графит в обеих темах: это предмет, а не поверхность
+     интерфейса, и «инверсный» токен в тёмной делал её белой. */
+  border: 12px solid var(--neutral-120); border-radius: 56px;
+  box-shadow: var(--shadow-3);
+}
+/* ПОЛОС ПРОКРУТКИ В ПРИЛОЖЕНИИ НЕ БЫВАЕТ — прокручивают рукой: пальцем на
+   телефоне, перетаскиванием мыши в прототипе. Правило ОДНО на весь корпус, а не
+   по одному у каждой полосы: тогда новая прокручиваемая полоса не может вернуть
+   полосу прокрутки. Скрытие задаётся ДВУМЯ способами — стандартное свойство не
+   работает в старых webkit, а webkit-псевдоэлемент не работает в Firefox, и
+   именно из-за этого полоса под чипсами была видна. */
+.fm-phone, .fm-phone * { scrollbar-width: none; -ms-overflow-style: none; }
+.fm-phone::-webkit-scrollbar, .fm-phone *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+/* Строка состояния с вырезом: время слева, вырез по центру, значки справа. */
+.fm-status {
+  flex: 0 0 auto; height: 54px; display: flex; align-items: center;
+  padding: 0 var(--size-8x); position: relative; z-index: 5;
+  background: var(--bg-secondary);
+}
+.fm-status__time { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+.fm-status__spacer { flex: 1 1 auto; }
+.fm-status__icons { display: flex; align-items: center; gap: 5px; }
+.fm-island {
+  position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+  width: 118px; height: 34px; border-radius: 20px; background: var(--neutral-130);
+}
+
+/* ─── Верхняя панель. Действия закреплены, крупный заголовок уезжает вместе с
+       содержимым и оставляет после себя компактный (antd: <NavBar>). ───────── */
+.m-nav {
+  flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-xs);
+  min-height: 44px; padding: 0 var(--space-m); background: var(--bg-secondary);
+  position: relative; z-index: 4;
+}
+.m-nav__compact {
+  flex: 1 1 auto; min-width: 0; text-align: center; padding: 0 var(--space-xs);
+  opacity: 0; transition: opacity .18s cubic-bezier(.4,0,.2,1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.m-nav.is-scrolled { border-bottom: .5px solid var(--line-divider); }
+.m-nav.is-scrolled .m-nav__compact { opacity: 1; }
+.m-nav__acts { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.m-large-block { padding: var(--space-xs) var(--size-5x) var(--size-3x); background: var(--bg-secondary); }
+.m-large-block .m-sub { margin-top: 2px; }
+
+.m-scroll { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.m-scroll--doc { background: var(--bg-container); }      /* текст записи — на белом */
+.m-pad { padding: 0 var(--size-5x); }
+.m-bottom { height: var(--size-20x); }                 /* воздух над нижней панелью */
+/* На экранах с плавающей кнопкой записи воздуха нужно больше: иначе последняя
+   строка списка навсегда остаётся под кнопкой. */
+.m-scroll--fab .m-bottom { height: 140px; }
+
+/* ─── Нижняя панель навигации (antd: <TabBar>). ──────────────────────────── */
+.m-tabbar {
+  flex: 0 0 auto; display: flex; align-items: flex-end; gap: 0;
+  padding: var(--space-m) var(--space-xs) var(--size-6x);
+  background: var(--bg-container); border-top: .5px solid var(--line-divider);
+}
+.m-tabbar button {
+  flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  gap: 4px; min-height: 48px; padding: var(--space-xs) 0 0; border: none; background: none;
+  font-family: inherit; font-size: 11px; font-weight: 500; color: var(--text-complimentary); cursor: pointer;
+}
+.m-tabbar button.is-on { color: var(--primary-base); }
+
+/* Кнопка записи — ПЛАВАЮЩАЯ НАД панелью разделов, а не внутри неё: по Apple HIG
+   («Tab bars», июнь 2026) панель разделов служит навигации и действий в себе не
+   держит — «Use a tab bar to support navigation, not to provide actions».
+   Приём взят у Apple Mail: круглая кнопка действия в правом нижнем углу над
+   панелью. Показывается только там, где действие уместно — в списке записей. */
+.m-fab {
+  position: absolute; right: var(--size-5x); bottom: 100px; z-index: 30;
+  width: 62px; height: 62px; border: none; border-radius: 50%;
+  background: var(--primary-base); color: var(--text-contrast);
+  display: grid; place-items: center; box-shadow: var(--shadow-2); cursor: pointer;
+}
+.m-fab:active { background: var(--primary-active); }
+
+/* Аксессуар, прикреплённый к панели разделов — HIG «tab bar with an attached
+   accessory», как мини-плеер в Музыке. Панель разделов при этом ОСТАЁТСЯ
+   видимой: скрывать её HIG запрещает («If you hide the tab bar, people can
+   forget which area of the app they're in»), исключение только у модального
+   экрана — им у нас идёт запись встречи. */
+.m-acc { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-l);
+  padding: var(--space-m) var(--size-5x); background: var(--bg-container);
+  border-top: .5px solid var(--line-divider); cursor: pointer; }
+.m-acc .m-wave { flex: 1 1 auto; height: 28px; }
+.m-acc__side { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-m); }
+.m-play--mini { width: 44px; height: 44px; }
+
+/* ─────────────────────────── ЭЛЕМЕНТЫ ──────────────────────────────────── */
+.fm-i { width: 22px; height: 22px; flex: 0 0 auto;
+        stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.fm-i--s { width: 17px; height: 17px; }
+.fm-i--l { width: 28px; height: 28px; }
+.fm-i--xl { width: 56px; height: 56px; stroke-width: 1; }
+.fm-i--tab { width: 26px; height: 26px; }
+
+.fm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-m);
+  min-height: 48px; padding: 0 var(--size-6x); border-radius: var(--radius-l);
+  border: 1px solid var(--line-border); background: var(--bg-container);
+  font-family: inherit; font-size: 17px; font-weight: 500; color: var(--text-primary); cursor: pointer;
+}
+.fm-btn:active { background: var(--bg-container-active); }
+.fm-btn--primary { background: var(--primary-base); border-color: var(--primary-base); color: var(--text-contrast); }
+.fm-btn--primary:active { background: var(--primary-active); }
+/* Разрушительное действие несёт цвет опасности, а не цвет главного действия
+   (28.08.2026): удаление записи без возврата стояло бирюзовой праймари, то есть
+   выглядело рекомендуемым. Токены канона, литералов нет. */
+.fm-btn--danger { background: var(--danger-base); border-color: var(--danger-base); color: var(--text-contrast); }
+.fm-btn--danger:active { background: var(--danger-active); border-color: var(--danger-active); }
+.fm-btn--text { background: none; border-color: transparent; color: var(--primary-base); min-height: 44px; padding: 0 var(--space-m); }
+.fm-btn--icon { width: 44px; min-height: 44px; padding: 0; color: var(--primary-base);
+  background: none; border-color: transparent; }
+/* Порядок важен: у значка-кнопки заливка снята, поэтому основной цвет
+   возвращаем явно — иначе «Спросить» выглядит как голая стрелка. */
+.fm-btn--icon.fm-btn--primary { background: var(--primary-base); border-color: var(--primary-base);
+  color: var(--text-contrast); border-radius: var(--radius-l); }
+.fm-btn--block { width: 100%; }
+.fm-btn--sm { min-height: 36px; padding: 0 var(--padding-l); font-size: 15px; }
+.fm-btn[disabled] { opacity: .35; pointer-events: none; }
+
+.fm-input {
+  width: 100%; min-height: 48px; padding: 0 var(--padding-l);
+  border: 1px solid var(--line-border); border-radius: var(--radius-l);
+  background: var(--bg-container); color: var(--text-primary);
+  font-family: inherit; font-size: 17px;
+}
+.fm-input:focus { outline: none; border-color: var(--primary-base); box-shadow: var(--shadow-focus-primary); }
+.fm-textarea { width: 100%; min-height: 104px; padding: var(--padding-l); border: 1px solid var(--line-border);
+  border-radius: var(--radius-l); background: var(--bg-container); color: var(--text-primary);
+  font-family: inherit; font-size: 17px; resize: vertical; }
+/* Поле поиска в мобильном виде: заливка вместо рамки, значок внутри. */
+.m-searchwrap { position: relative; display: flex; align-items: center; }
+.m-searchwrap .fm-i { position: absolute; left: var(--padding-l); color: var(--text-icon); pointer-events: none; }
+.m-searchwrap .fm-input {
+  padding-left: calc(var(--padding-l) + 22px + var(--space-m));
+  background: var(--bg-container); border-color: transparent;   /* на серой подложке заливка белая */
+}
+
+.fm-tag { display: inline-flex; align-items: center; gap: var(--space-xs);
+  padding: 1px var(--padding-s); border-radius: var(--radius-m); background: var(--bg-container-secondary);
+  color: var(--text-complimentary); font-size: 13px; line-height: 18px; white-space: nowrap; }
+.fm-tag--green { background: var(--positive-bg); color: var(--positive-base); }
+.fm-tag--cyan { background: var(--tag-cyan-bg); color: var(--tag-cyan-text); }
+
+/* ─── Группа строк: скруглённая вставка с воздухом по бокам, разделители не
+       на всю ширину, а от текста (antd: <List> inset). ──────────────────── */
+.m-group {
+  margin: 0 var(--size-5x) var(--size-5x); border-radius: var(--radius-l);
+  background: var(--bg-container); overflow: hidden;
+}
+/* Заголовок группы: основной цвет и насыщенность, а не приглушённый серый —
+   канонический вторичный на подложке экрана замерен в 2,09:1 (тёмная тема). */
+.m-grouphead { padding: var(--space-m) var(--size-5x) var(--space-m); color: var(--text-complimentary); font-weight: 600; }
+
+.m-row {
+  display: flex; align-items: center; gap: var(--space-l); width: 100%; text-align: left;
+  min-height: 60px; padding: var(--space-m) var(--padding-l); border: none;
+  background: none; font-family: inherit; color: var(--text-primary); cursor: pointer;
+}
+.m-row:active { background: var(--bg-container-hover); }
+.m-row + .m-row { box-shadow: inset 0 .5px 0 var(--line-divider); }
+.m-row--inset + .m-row--inset { box-shadow: none; }
+/* Разделитель внутри группы начинается от текста, а не от края: у строки без
+   значка это отступ группы, у строки со значком — плюс сам значок. */
+.m-row--inset { position: relative; --m-inset: var(--padding-l); }
+.m-row--inset:has(.m-row__ico) { --m-inset: calc(var(--padding-l) + 22px + var(--space-l)); }
+.m-row--inset + .m-row--inset::before {
+  content: ""; position: absolute; left: var(--m-inset); right: 0; top: 0;
+  height: .5px; background: var(--line-divider);
+}
+.m-row__body { flex: 1 1 auto; min-width: 0; }
+.m-row__title { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* У строки со значением справа подпись держится в одну строку: иначе длинная
+   подпись переносится и строка становится вдвое выше соседних. Обратная
+   сторона — обрезка, поэтому подписи таких строк держим короткими. */
+.m-row:has(.m-row__val) .m-row__title { -webkit-line-clamp: 1; }
+/* Подпись строки настройки лежит прямо в теле строки, без отдельного класса —
+   поэтому в одну строку её держим по телу. */
+.m-row:has(.m-row__val) > .m-row__body { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m-row__meta { display: flex; align-items: center; gap: var(--space-m); margin-top: 3px;
+  color: var(--text-complimentary); white-space: nowrap; overflow: hidden; }
+/* Превью содержания записи: строка списка обязана нести смысл, а не только
+   метаданные — иначе список читается как каталог файлов, а не как содержание.
+   Две строки, дальше обрезка: строка списка не должна расти выше соседних. */
+.m-row__prev { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; margin-top: 3px; color: var(--text-complimentary); }
+.m-row__prev--wait { color: var(--text-complimentary); display: flex; align-items: center; gap: var(--space-m); }
+.m-row__prev--wait .fm-i { animation: fm-spin 1.1s linear infinite; }
+/* Длинную подпись (профиль с лимитом) пускаем в две строки. */
+.m-row__meta--wrap { white-space: normal; overflow: visible; }
+.m-row__dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+.m-row__act { flex: 0 0 auto; width: 44px; min-height: 44px; display: grid; place-items: center;
+  color: var(--text-icon); border: none; background: none; cursor: pointer; border-radius: 50%; }
+.m-row__act:active { background: var(--bg-icon-hover); }
+.m-row__chev { flex: 0 0 auto; color: var(--text-icon-disabled); }
+.m-row__ico { flex: 0 0 auto; color: var(--primary-base); }
+.m-row__val { flex: 0 1 auto; min-width: 0; color: var(--text-complimentary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Элемент управления в строке (переключатель, кнопка, метка) не сжимается и не
+   обрезается: в обрезающей обёртке кнопка перестаёт принимать нажатие в центр. */
+.m-row__right { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-m); }
+/* Точка-разделитель в подписи строки: цвет линии давал 1,41:1 и точка просто
+   не читалась — берём ту же ступень, что и сама подпись. */
+.m-sep { color: var(--text-complimentary); }
+
+/* Найденное место: цитата со своим временем; нажатие уводит прямо в это место
+   записи, а не просто «в запись». */
+.m-hitrow { display: flex; align-items: flex-start; gap: var(--space-l); width: 100%; text-align: left;
+  padding: var(--space-m) var(--padding-l); border: none; background: none;
+  font-family: inherit; color: var(--text-primary); cursor: pointer;
+  box-shadow: inset 0 .5px 0 var(--line-divider); }
+.m-hitrow:active { background: var(--bg-container-hover); }
+.m-hitrow .m-time { flex: 0 0 auto; padding-top: 2px; }
+.m-hitrow__txt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: var(--text-complimentary); }
+
+.m-empty { display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: var(--size-20x) var(--size-8x); color: var(--text-complimentary); }
+.m-empty__icon { color: var(--text-icon-disabled); margin-bottom: var(--size-5x); }
+.m-empty h2 { margin: 0 0 var(--space-m); color: var(--text-primary); }
+.m-empty p { margin: 0; max-width: 260px; }
+
+/* Кружок с инициалами владельца пространства. Инициалы — данные учётной
+   записи, поэтому у них свой класс: проверка языка по нему понимает, что это
+   не строка интерфейса. */
+.m-avatar { width: 52px; height: 52px; border-radius: 50%; flex: 0 0 auto;
+  background: var(--primary-bg); color: var(--primary-active); display: grid; place-items: center; }
+
+/* Кружок цвета папки: выбранный несёт обводку, а не галочку внутри — на цветном
+   круге галочка теряется. */
+.m-swatch { width: 44px; height: 44px; border-radius: 50%; border: 2px solid transparent;
+  box-shadow: inset 0 0 0 2px var(--bg-container); cursor: pointer; }
+.m-swatch.is-on { border-color: var(--text-primary); }
+
+.m-toggle { width: 51px; height: 31px; border-radius: 31px; flex: 0 0 auto;
+  border: none; background: var(--bg-rail); position: relative; cursor: pointer; }
+.m-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px;
+  border-radius: 50%; background: var(--bg-container); box-shadow: var(--shadow-1);
+  transition: transform .18s cubic-bezier(.4,0,.2,1); }
+.m-toggle.is-on { background: var(--primary-base); }
+.m-toggle.is-on::after { transform: translateX(20px); }
+
+/* ─────────────────── ПРОИГРЫВАТЕЛЬ — ПОЛОСА ВНИЗУ ЭКРАНА ───────────────────
+   Жанровое решение голосовых блокнотов: главное на экране записи — текст, а не
+   пульт, поэтому звук живёт тонкой полосой в нижней зоне большого пальца и
+   занимает место нижней панели разделов (на вложенном экране она уходит).
+   Разбор жанра — ../interfeys-golosovyh-bloknotov-razbor.2026-08-27.md */
+.m-pbar { flex: 0 0 auto; padding: var(--space-m) var(--size-5x) var(--size-6x);
+  background: var(--bg-container); border-top: .5px solid var(--line-divider); }
+.m-times { display: flex; justify-content: space-between; margin-top: 2px; color: var(--text-complimentary); }
+.m-ctrls { display: flex; align-items: center; gap: var(--space-m); margin-top: var(--space-m); }
+.m-ctrls__gap { flex: 1 1 auto; }
+.m-play { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%;
+  border: none; background: var(--primary-base); color: var(--text-contrast); cursor: pointer; flex: 0 0 auto; }
+.m-play:active { background: var(--primary-active); }
+.m-seek { width: 44px; height: 44px; display: grid; place-items: center; border: none; background: none;
+  color: var(--text-primary); cursor: pointer; border-radius: 50%; flex: 0 0 auto; }
+.m-seek:active { background: var(--bg-icon-hover); }
+/* Закладка в проигрывателе: горит, когда звучащее место уже отмечено. */
+#btnMark.is-on { color: var(--tag-orange-text); }
+.m-speed.is-on { background: var(--primary-bg); color: var(--text-primary); font-weight: 600; }
+.m-speed { min-height: 36px; padding: 0 var(--padding-m); flex: 0 0 auto;
+  border-radius: var(--radius-m); border: none; background: var(--bg-container-secondary);
+  font-family: inherit; font-size: 15px; font-variant-numeric: tabular-nums;
+  color: var(--text-primary); cursor: pointer; }
+
+/* ─── Волна вместо линии прогресса: видно, где говорили, а где молчали.
+       Нажатие в любое место волны переводит звук туда. Высоты полос выведены из
+       номера записи — при каждом открытии волна одна и та же. ─────────────── */
+.m-wave { display: flex; align-items: center; gap: 2px; height: 36px; cursor: pointer; }
+.m-wave span { flex: 1 1 0; border-radius: 1.5px; background: var(--bg-rail); }
+.m-wave span.is-played { background: var(--primary-base); }
+/* Отмеченное место видно на волне засечкой сверху — как в жанре: отметил на
+   слух, потом находишь глазами. */
+.m-wave span.is-marked { background: var(--tag-orange-text); }
+
+/* Шапка открытой записи: крупный заголовок уезжает с содержимым (HIG: large
+   title), поэтому область заголовка в панели остаётся пустой, пока не начнут
+   прокручивать, — обрезка названия тремя буквами уходит. */
+.m-notehead { padding: var(--space-m) var(--size-5x) var(--size-4x); background: var(--bg-container); }
+
+/* Сегменты вкладок записи (antd: <Segmented>). Закреплены под панелью: в
+   часовой расшифровке вкладку иначе не переключить, не прокрутив наверх. */
+.m-segsrow { position: sticky; top: 0; z-index: 3; flex: 0 0 auto; background: var(--bg-container);
+  border-bottom: .5px solid var(--line-divider); overflow: hidden; }
+.m-segsrow::after {
+  content: ""; position: absolute; right: 0; top: 0; bottom: 1px; width: var(--size-8x);
+  background: linear-gradient(90deg, transparent, var(--bg-container)); pointer-events: none;
+}
+.m-segs { display: flex; gap: var(--space-m); overflow-x: auto; -webkit-overflow-scrolling: touch;
+  padding: var(--space-m) var(--size-8x) calc(var(--space-m) + 24px) var(--size-5x);
+  margin-bottom: -24px; }
+.m-seg-btn { flex: 0 0 auto; min-height: 36px; padding: 0 var(--padding-l); border-radius: var(--radius-l);
+  border: none; background: none;
+  font-family: inherit; font-size: 15px; color: var(--text-complimentary); cursor: pointer; }
+/* Выбранную вкладку показывает заливка, а не цвет подписи: бирюзовая подпись на
+   бирюзовой заливке замерена в 2,20:1 (тёмная тема), а серая подпись на серой
+   заливке неактивной — в 2,09:1. Сняли обе пары. */
+.m-seg-btn.is-on { background: var(--primary-bg); color: var(--text-primary); font-weight: 600; }
+
+/* Расшифровка: реплика как высказывание, а не строка таблицы. Текст и звук
+   сшиты — звучащая реплика подсвечена, нажатие на реплику переводит звук к ней.
+   Роль «сейчас звучит» несут заливка и полоса слева, а текст остаётся
+   основным: в тёмной теме основной цвет темнее, и текст на светлой заливке
+   пропадает (проверено замером контраста по канону). */
+.m-seg-row { position: relative; padding: var(--space-m) var(--size-5x);
+  margin-bottom: var(--size-3x); border-radius: var(--radius-l); cursor: pointer; }
+.m-seg-row:active { background: var(--bg-container-hover); }
+.m-seg-row.is-now { background: var(--primary-bg); }
+.m-seg-row.is-now::before { content: ""; position: absolute; left: 6px; top: var(--space-m); bottom: var(--space-m);
+  width: 3px; border-radius: 2px; background: var(--primary-base); }
+/* На подсвеченной реплике имя «нашего» говорящего берёт основной цвет: бирюза
+   на светлой заливке замерена в 2,20:1 (тёмная тема) — роль всё равно несут
+   заливка и полоса слева. */
+.m-seg-row.is-now .m-who--mine { color: var(--text-primary); }
+.m-seg-row__head { display: flex; align-items: baseline; gap: var(--space-m); margin-bottom: 4px; }
+.m-who { color: var(--text-primary); border: none; background: none; padding: 0;
+  font-family: inherit; font-size: inherit; font-weight: inherit; cursor: pointer; }
+.m-who--mine { color: var(--primary-active); }
+/* Время реплики — вторичная подпись, но подпись: у --text-hint на белом
+   замерено 1,84:1, это нечитаемо. */
+.m-time { color: var(--text-complimentary); font-variant-numeric: tabular-nums; }
+.m-seg-row p { margin: 0; }
+.m-seg-row__mark { margin-left: auto; color: var(--tag-orange-text); }
+/* Найденное слово в расшифровке. */
+/* Найденное слово: роль несёт ЗАЛИВКА, текст остаётся основным. Пара
+   «оранжевый текст на оранжевой заливке» замерена в 2,23:1. */
+.m-hl { background: var(--tag-orange-bg); color: var(--text-primary); border-radius: 3px; }
+
+/* Поиск внутри записи: часовая встреча без него нечитаема. */
+.m-findbar { flex: 0 0 auto; display: flex; align-items: center; gap: var(--space-m);
+  padding: var(--space-m) var(--size-5x); background: var(--bg-container);
+  border-bottom: .5px solid var(--line-divider); }
+.m-findbar .m-searchwrap { flex: 1 1 auto; }
+.m-findbar .fm-input { background: var(--bg-container-secondary); min-height: 40px; font-size: 15px; }
+
+.m-doc { padding: 0 var(--size-5x) var(--size-8x); }
+.m-doc h1 { font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -.3px; margin: var(--size-6x) 0 var(--size-4x); }
+.m-doc h2 { font-size: 19px; line-height: 25px; font-weight: 600; margin: var(--size-6x) 0 var(--space-m); }
+.m-doc p, .m-doc ul, .m-doc ol { font-size: 17px; line-height: 25px; margin: 0 0 var(--size-4x); }
+.m-doc ul, .m-doc ol { padding-left: var(--size-6x); }
+.m-doc li { margin-bottom: var(--space-m); }
+.m-doc strong { font-weight: 600; }
+.fm-ent { color: var(--text-link); cursor: pointer; }
+
+@keyframes fm-spin { to { transform: rotate(360deg); } }
+
+/* ─────────────────────────── ЗАПИСЬ (полный экран) ─────────────────────────
+   Строение жанровое: сверху состояние и счётчик, СЕРЕДИНУ занимает живая
+   расшифровка (слова появляются по ходу речи — этим приложение доказывает, что
+   слышит именно речь), внизу — волна и кнопки в зоне большого пальца. Раньше
+   всё стояло по центру, а нижняя треть экрана пустовала. */
+.m-rec {
+  position: absolute; top: 54px; left: 0; right: 0; bottom: 0; z-index: 40;
+  display: flex; flex-direction: column; background: var(--bg-secondary);
+}
+.m-rec__top { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-xs); padding: var(--size-6x) var(--size-8x) var(--size-4x); text-align: center; }
+.m-rec__head { display: flex; align-items: center; gap: var(--space-m); color: var(--text-complimentary); }
+.m-rec__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger-base);
+  animation: fm-blink 1.4s steps(1) infinite; }
+@keyframes fm-blink { 50% { opacity: .2; } }
+.m-rec__time { font-size: 48px; line-height: 1.05; font-weight: 300; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+/* Живая расшифровка. Последняя реплика — основным цветом, предыдущие уходят в
+   серый: так видно, что текст идёт за речью, а не стоит списком. */
+/* У верхнего края расшифровка растворяется: тогда обрезанная строка читается
+   как «выше есть ещё», а не как дефект — тот же приём, что у прокручиваемых
+   полос чипсов. */
+.m-rec__live { flex: 1 1 auto; overflow-y: auto; padding: 0 var(--size-5x);
+  mask-image: linear-gradient(180deg, transparent, #000 var(--size-8x));
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 var(--size-8x)); }
+.m-rec__line { margin: 0 0 var(--size-4x); color: var(--text-complimentary); }
+.m-rec__line:last-child { color: var(--text-primary); }
+.m-rec__line b { font-weight: 600; }
+.m-rec__wait { display: flex; align-items: center; justify-content: center; gap: var(--space-m);
+  height: 100%; color: var(--text-complimentary); text-align: center; }
+/* Волна во всю ширину: тишина и речь различимы глазом, «прибор слышит». */
+.m-level { display: flex; align-items: center; gap: 3px; height: 44px; width: 100%; }
+.m-level span { flex: 1 1 0; border-radius: 2px; background: var(--primary-base); animation: m-lvl .9s ease-in-out infinite; }
+@keyframes m-lvl { 0%, 100% { height: 8%; } 50% { height: 100%; } }
+.m-rec__bottom { flex: 0 0 auto; padding: var(--size-4x) var(--size-8x) var(--size-8x);
+  display: flex; flex-direction: column; align-items: center; gap: var(--size-4x); text-align: center; }
+/* Кнопки в нижней зоне: остановка — крупная круглая, одной рукой не глядя. */
+.m-rec__acts { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.m-rec__stop { width: 76px; height: 76px; border-radius: 50%; border: none; flex: 0 0 auto;
+  background: var(--danger-base); color: var(--text-contrast); display: grid; place-items: center; cursor: pointer; }
+.m-rec__stop:active { background: var(--danger-active); }
+.m-rec__side { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 76px;
+  border: none; background: none; font-family: inherit; font-size: 13px;
+  color: var(--text-primary); cursor: pointer; padding: var(--space-m) 0; }
+.m-rec__side .fm-i { color: var(--text-primary); }
+.m-rec__side:disabled { opacity: .35; pointer-events: none; }
+.m-rec__note { color: var(--text-complimentary); max-width: 280px; }
+.m-rec__done { flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: var(--size-6x); padding: var(--size-8x); text-align: center; }
+.m-rec__done .fm-btn { min-width: 200px; }
+
+/* ══════════════════════ ANDROID: ОБОЛОЧКА MATERIAL 3 ═══════════════════════
+   Приложение выходит на двух ОС, поэтому оболочек ДВЕ, а не одна средняя:
+   пользователь каждой платформы должен видеть привычные манеры. Структура
+   (папки → записи → запись, разделы внизу, шторки, мини-плеер) общая — она от
+   платформы не зависит; расходятся ФОРМА и поведение отдельных элементов.
+   Ниже — только расхождения, по фактам первоисточников (m3.material.io):
+   активный раздел несёт «пилюлю»-индикатор, кнопка действия — Medium FAB со
+   скруглением, цель нажатия 48dp против 44pt у Apple, сообщения о результате —
+   штатный снэкбар (в iOS такого элемента нет вовсе), список идёт во всю ширину
+   без «карточек», скругления крупнее.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-os="android"] { font-family: 'Roboto', system-ui, sans-serif; }
+
+/* Активный раздел: подложка под значком, а не только цвет (M3 active indicator). */
+[data-os="android"] .m-tabbar button { gap: 2px; }
+[data-os="android"] .m-tabbar button .fm-i {
+  padding: 4px 20px; border-radius: 16px; box-sizing: content-box; width: 26px; height: 26px;
+}
+[data-os="android"] .m-tabbar button.is-on .fm-i { background: var(--primary-bg); }
+[data-os="android"] .m-tabbar button.is-on { color: var(--text-primary); font-weight: 600; }
+
+/* Кнопка действия: Medium FAB — скруглённый квадрат, а не круг. */
+[data-os="android"] .m-fab { width: 56px; height: 56px; border-radius: 16px; }
+
+/* Список во всю ширину: «карточки» с воздухом по бокам — приём Apple. */
+[data-os="android"] .m-group { margin-left: 0; margin-right: 0; border-radius: 0; }
+[data-os="android"] .m-grouphead { font-weight: 500; }
+
+/* Цель нажатия 48dp вместо 44pt. */
+[data-os="android"] .fm-btn--icon,
+[data-os="android"] .m-row__act,
+[data-os="android"] .m-seek { width: 48px; min-height: 48px; height: 48px; }
+[data-os="android"] .m-nav { min-height: 48px; }
+[data-os="android"] .m-row { min-height: 64px; }
+[data-os="android"] .fm-sheet__item { min-height: 60px; }
+[data-os="android"] .m-swatch { width: 48px; height: 48px; }
+
+/* Скругления крупнее: у M3 кнопки и поля почти капсульные, шторка — 28. */
+[data-os="android"] .fm-btn, [data-os="android"] .fm-input,
+[data-os="android"] .m-seg-btn, [data-os="android"] .m-speed { border-radius: 999px; }
+[data-os="android"] .fm-sheet { border-radius: 28px 28px 0 0; }
+[data-os="android"] .m-card, [data-os="android"] .m-askchips button { border-radius: 16px; }
+
+/* Полоска системного жеста: в Android возврат и переход домой — системные, и
+   пользователь ищет их у нижнего края, а не только в интерфейсе приложения. */
+.m-sysbar { display: none; }
+[data-os="android"] .m-sysbar {
+  display: block; position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%);
+  width: 108px; height: 4px; border-radius: 2px; background: var(--text-icon); z-index: 20;
+}
+[data-os="android"] .m-tabbar { padding-bottom: var(--size-8x); }
+
+/* Сообщение о результате — снэкбар: прямоугольный, во всю ширину у нижнего
+   края, слева текст. Всплывающая «пилюля» по центру — не Material. */
+[data-os="android"] .fm-toast {
+  left: var(--space-m); right: var(--space-m); transform: translateY(10px);
+  max-width: none; border-radius: var(--radius-m); text-align: left;
+}
+[data-os="android"] .fm-toast.is-open { transform: translateY(0); }
+
+/* ───────────────────────────── ШТОРКА СНИЗУ ──────────────────────────────── */
+.fm-scrim {
+  position: absolute; inset: 0; z-index: 50; display: flex; align-items: flex-end;
+  background: var(--bg-mask); opacity: 0; pointer-events: none; transition: opacity .18s;
+}
+.fm-scrim.is-open { opacity: 1; pointer-events: auto; }
+.fm-sheet {
+  width: 100%; max-height: 82%; display: flex; flex-direction: column;
+  background: var(--bg-float); border-radius: var(--radius-l) var(--radius-l) 0 0;
+  transform: translateY(24px); transition: transform .2s cubic-bezier(.4,0,.2,1);
+  padding-bottom: var(--size-8x);
+}
+.fm-scrim.is-open .fm-sheet { transform: translateY(0); }
+.fm-sheet__grip { width: 40px; height: 5px; border-radius: 3px; background: var(--line-border);
+  margin: var(--space-m) auto var(--space-xs); flex: 0 0 auto; }
+.fm-sheet__head { padding: var(--space-m) var(--size-5x) var(--size-3x); }
+.fm-sheet__body { overflow-y: auto; }
+.fm-sheet__item { display: flex; align-items: center; gap: var(--size-4x); width: 100%; text-align: left;
+  min-height: 56px; padding: var(--space-m) var(--size-5x); border: none; background: none;
+  font-family: inherit; font-size: 17px; color: var(--text-primary); cursor: pointer; }
+.fm-sheet__item:active { background: var(--bg-container-hover); }
+.fm-sheet__item .fm-i:first-child { color: var(--primary-base); }
+.fm-sheet__item.is-danger, .fm-sheet__item.is-danger .fm-i:first-child { color: var(--danger-base); }
+.fm-sheet__foot { display: flex; gap: var(--size-3x); padding: var(--size-4x) var(--size-5x) 0; }
+.fm-sheet__foot .fm-btn { flex: 1 1 0; }
+.fm-check { margin-left: auto; color: var(--primary-base); }
+
+/* Всплывающее сообщение (antd: <Toast>). */
+.fm-toast {
+  position: absolute; left: 50%; bottom: 118px; transform: translate(-50%, 10px);
+  max-width: 84%; padding: var(--padding-l) var(--size-6x); border-radius: var(--radius-l);
+  background: var(--bg-container-inverse); color: var(--text-contrast); text-align: center;
+  font-size: 15px; line-height: 20px;
+  opacity: 0; pointer-events: none; z-index: 60; transition: opacity .18s, transform .18s;
+}
+.fm-toast.is-open { opacity: 1; transform: translate(-50%, 0); }
+
+/* Полоса лимита. */
+.m-quota__rail { height: 6px; border-radius: 3px; background: var(--bg-rail); overflow: hidden; margin: var(--space-m) 0; }
+.m-quota__fill { height: 100%; border-radius: 3px; background: var(--primary-base); }
+
+.m-card { display: block; width: 100%; text-align: left; padding: var(--size-5x);
+  border: none; border-radius: var(--radius-l); background: var(--bg-container);
+  font-family: inherit; color: var(--text-primary); cursor: pointer; margin-bottom: var(--size-4x); }
+.m-card:active { background: var(--bg-container-hover); }
+.m-card h3 { margin: 0 0 var(--space-xs); }
+.m-card p { margin: 0; }
+.m-card__foot { display: flex; align-items: center; gap: var(--space-m); margin-top: var(--size-4x); color: var(--text-complimentary); }
+.m-stat { display: flex; align-items: baseline; gap: var(--space-l); }
+.m-stat__v { font-size: 28px; line-height: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.m-answer { padding: 0 var(--size-5x) var(--size-6x); }
+.m-answer p { margin: 0 0 var(--size-4x); font-size: 17px; line-height: 25px; }
+.m-cite { display: inline-flex; align-items: center; gap: var(--space-xs); margin-top: var(--space-m);
+  min-height: 36px; padding: 0 var(--padding-l); border-radius: var(--radius-l);
+  border: none; background: var(--primary-bg); color: var(--primary-active);
+  font-family: inherit; font-size: 15px; cursor: pointer; }
+.m-askchips { display: flex; flex-direction: column; gap: var(--size-3x); padding: 0 var(--size-5x); }
+.m-askchips button { display: flex; align-items: center; gap: var(--size-4x); width: 100%; text-align: left;
+  min-height: 56px; padding: var(--space-m) var(--padding-l); border-radius: var(--radius-l);
+  border: none; background: var(--bg-container); font-family: inherit; font-size: 17px;
+  color: var(--text-primary); cursor: pointer; }
+.m-askchips button:active { background: var(--bg-container-hover); }
+.m-askchips .fm-i { color: var(--primary-base); }
+
+/* ═══════ ЧТО ПРОДУКТ ДЕЛАЕТ ВО ВРЕМЯ РАЗГОВОРА (правка 27.08.2026) ═════════
+   Подсказка в моменте, диктофоны, связь и очередь отправки. Только токены
+   канона и мобильная шкала кегля (.m-*), как во всём файле. */
+
+/* Подсказка на экране записи — то, ради чего экран и существует. Она стоит
+   НАД лентой речи: речь доказывает, что слышим, подсказка отвечает «что
+   сказать сейчас». */
+.m-hintbox { flex: 0 0 auto; padding: 0 var(--size-5x) var(--size-4x); }
+.m-hint {
+  display: block; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+  padding: var(--size-4x); border-radius: var(--radius-l); border: 1px solid var(--primary-border);
+  background: var(--primary-bg); color: var(--text-primary);
+}
+.m-hint:active { background: var(--bg-container-hover); }
+.m-hint__head { display: flex; align-items: center; gap: var(--space-m); margin-bottom: var(--space-xs); }
+.m-hint__t { margin: 0 0 var(--space-xs); }
+.m-hint__b { margin: 0; }
+.m-hint__src { display: flex; align-items: center; gap: var(--space-xs); margin: var(--size-3x) 0 0; color: var(--text-complimentary); }
+.m-hint__wait {
+  display: flex; align-items: center; justify-content: center; gap: var(--space-m);
+  padding: var(--size-4x); border-radius: var(--radius-l);
+  background: var(--bg-container); color: var(--text-complimentary); text-align: center;
+}
+/* Крестик отмены на экране записи: отмена — единственное необратимое действие,
+   поэтому она отдельно от остановки и уводит в подтверждение. */
+.m-rec__x {
+  position: absolute; top: var(--size-4x); right: var(--size-5x); z-index: 2;
+  width: 44px; height: 44px; border: none; border-radius: 50%;
+  background: var(--bg-container); color: var(--text-primary); display: grid; place-items: center; cursor: pointer;
+}
+/* Полоса состояния связи и очереди. */
+.m-linkbar {
+  display: flex; align-items: center; gap: var(--space-m);
+  margin: 0 var(--size-5x) var(--size-4x); padding: var(--size-3x) var(--size-4x);
+  border-radius: var(--radius-l); background: var(--bg-container); color: var(--text-complimentary);
+}
+.m-linkbar.is-off { background: var(--warning-bg); color: var(--text-primary); }
+.m-linkbar__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-60); flex: 0 0 auto; }
+.m-linkbar.is-off .m-linkbar__dot { background: var(--warning-base); }
+.m-linkbar__txt { flex: 1 1 auto; min-width: 0; }
+/* Заряд и память диктофона. */
+.m-bat { height: 6px; border-radius: 3px; background: var(--bg-rail); overflow: hidden; margin-top: var(--space-m); }
+.m-bat__fill { height: 100%; border-radius: 3px; background: var(--primary-base); }
+.m-bat__fill.is-low { background: var(--warning-base); }
+.m-warn {
+  display: flex; gap: var(--space-m); align-items: flex-start;
+  margin: 0 var(--size-5x) var(--size-4x); padding: var(--size-4x);
+  border-radius: var(--radius-l); background: var(--warning-bg); color: var(--text-primary);
+}
+.m-warn--danger { background: var(--danger-bg); }
+</style>
+
+</head>
+<body>
+
+<noscript>
+  <!-- ВЫКЛЮЧЕННЫЕ СКРИПТЫ — молчаливый белый экран. Прототип собирается скриптом:
+       корпус и плашка нарисованы разметкой, всё остальное появляется в браузере.
+       Без этого блока страница выглядит поломанной и не называет причину. -->
+  <div style="position:fixed;left:0;right:0;top:0;z-index:99999;padding:12px 16px;
+              background:#fff1f0;border-bottom:1px solid #ffa39e;color:#a8071a;
+              font:14px/20px system-ui,sans-serif">
+    <strong>В браузере выключены скрипты — прототип не соберётся</strong><br>
+    <span style="color:#595959">Видно только корпус устройства и служебную плашку.
+    Проверьте: значок слева от адреса → «Настройки сайтов» → JavaScript «Разрешить».
+    Если там разрешено — попробуйте открыть эту же ссылку в окне инкогнито: там
+    расширения выключены, и станет видно, блокирует ли скрипты одно из них.</span>
+  </div>
+</noscript>
+
+
+<div class="fm-plaque text-caption-2">
+  <span class="fm-plaque__tag">Прототип · выброс</span>
+  <span><strong style="color:var(--text-primary)">FlowMeet для телефона</strong> — по снимкам эталона, оформление корпоративное (канон miniapp-ui)</span>
+  <span class="fm-plaque__switch" id="langSwitch">
+    <button data-setlang="ru">Русский</button>
+    <button data-setlang="en">English</button>
+  </span>
+  <span class="fm-plaque__switch" id="osSwitch">
+    <button data-setos="ios">iOS</button>
+    <button data-setos="android">Android</button>
+  </span>
+  <span class="fm-plaque__switch">
+    <button data-theme-toggle="1">Светлая / тёмная</button>
+  </span>
+  <!-- Что решила организация: режим записи, профиль подсказок, разрешения
+       сервера. В продукте это приходит с сервера, и пользователь их не
+       выбирает, поэтому переключатели стоят в ПЛАШКЕ ПРОТОТИПА, а экран
+       «Ещё → Организация» только показывает состояние (спека состава
+       28.08.2026, раздел Б: «элемент прототипа, а не продукта»). -->
+  <span>Организация:</span>
+  <span class="fm-plaque__switch" id="orgSwitch">
+    <button data-orgmode="assistant">Помощник</button>
+    <button data-orgmode="mandatory">Запись обязательна</button>
+  </span>
+  <span class="fm-plaque__switch" id="profSwitch">
+    <button data-hintprof="sales">Продажи</button>
+    <button data-hintprof="support">Поддержка</button>
+    <button data-hintprof="hr">Найм</button>
+    <button data-hintprof="dev">Разработка</button>
+  </span>
+  <span class="fm-plaque__switch" id="permSwitch">
+    <button data-orgtoggle="privateCalls">Приватный звонок</button>
+    <button data-orgtoggle="diarization">Разделение голосов</button>
+  </span>
+</div>
+
+<div class="fm-phone" id="phone" data-os="ios">
+  <!-- Имитация строки состояния телефона -->
+  <div class="fm-status">
+    <span class="fm-status__time m-num" id="clock">9:41</span>
+    <span class="fm-island"></span>
+    <span class="fm-status__spacer"></span>
+    <span class="fm-status__icons">
+      <svg class="fm-i fm-i--s" viewBox="0 0 16 16"><path d="M1.5 10.5h2v3h-2zM5.5 8h2v5.5h-2zM9.5 5.5h2v8h-2zM13 3h2v10.5h-2z" fill="currentColor" stroke="none"/></svg>
+      <svg class="fm-i fm-i--s" viewBox="0 0 16 16"><path d="M8 13.2a4.8 4.8 0 0 1 4.8-4.8M8 13.2a2.6 2.6 0 0 1 2.6-2.6M8 13.2h.01"/></svg>
+      <svg class="fm-i fm-i--s" viewBox="0 0 16 16"><rect x="1.5" y="5.5" width="11.5" height="6" rx="2"/><path d="M14.4 8.2v1.6"/><rect x="3" y="7" width="8" height="3" rx="1" fill="currentColor" stroke="none"/></svg>
+    </span>
+  </div>
+
+  <div id="app" style="flex:1 1 auto;display:flex;flex-direction:column;min-height:0"></div>
+
+  <!-- Полоска системного жеста Android: «назад» там системная, а не приложения -->
+  <div class="m-sysbar" aria-hidden="true"></div>
+
+  <!-- Аксессуар панели разделов (мини-плеер открытой записи) -->
+  <div class="m-acc" id="acc" hidden></div>
+
+  <nav class="m-tabbar" id="tabbar"></nav>
+
+  <!-- Шторка снизу: выбор папки, меню записи, скорость, язык -->
+  <div class="fm-scrim" id="scrim">
+    <div class="fm-sheet" role="dialog" aria-modal="true">
+      <div class="fm-sheet__grip"></div>
+      <div id="sheet"></div>
+    </div>
+  </div>
+
+  <div class="fm-toast text-body-3" id="toast" role="status"></div>
+</div>
+
+<!-- Общая часть двух прототипов: данные, счёт, язык. Своей копии нет. -->
+<script src="../flowmeet-shared/data.js"></script>
+
+<script>
+/* СТАРАЯ КОПИЯ ОБЩЕЙ ЧАСТИ — самая частая причина «страница не грузит»: браузер
+   держит `data.js` прошлой версии, а страница уже новая. Тогда первый же вызов
+   падает, экран остаётся пустым, и причина не видна — обновление с очисткой кэша
+   чинит, но догадаться про это нельзя. Проверяем ЗАРАНЕЕ и называем причину. */
+(function () {
+  var need = { devSpace: 'память диктофона', hintsAfter: 'подсказки за репликой',
+               recLinesAt: 'ход живой расшифровки', linesForHints: 'ссылка на подсказки',
+               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк' };
+  var miss = Object.keys(need).filter(function (n) {
+    /* typeof по необъявленному имени не падает, поэтому проверка безопасна. */
+    return eval('typeof ' + n) !== 'function';
+  });
+  if (!miss.length) return;
+  window.__fmDiag.err = 'общая часть старее страницы: ' + miss.join(', ');
+  if (window.__fmBanner) window.__fmBanner('Общая часть прототипа старее страницы',
+    'Браузер отдал старую копию data.js, поэтому интерфейс не собрался. Обновите страницу'
+    + ' с очисткой кэша: Ctrl+Shift+R (на Mac ⇧⌘R). Не помогло — скажите, чего не хватает: '
+    + miss.join(', ') + '.');
+})();
+</script>
+
+
+<script>
+/* ============================================================================
+   СОСТОЯНИЕ. Экран один за раз, как на телефоне; возврат — стрелкой в панели.
+   ========================================================================== */
+const M = {
+  /* Главный экран раздела «Записи» — ПАПКИ, а список записей лежит на уровень
+     внутрь: так устроены системный «Диктофон» и приложения жанра. Раньше папки
+     были полосой чипсов-фильтров поверх плоского списка — это веб-приём, на
+     телефоне разделы открывают переходом. */
+  screen: 'folders',               // folders | files | note | search | ask | templates | more | set | membership
+  scope: { kind: 'all', value: null },
+  fileId: 'demo', tab: 'summary', generated: {},
+  q: '', ask: { q: '', folder: null, asked: false },
+  playing: false, speed: 1,
+  /* Поиск внутри открытой записи: без него часовая встреча нечитаема. */
+  find: '', findOpen: false,
+  /* Отмеченные на слух места: ключ — запись, значение — номера реплик. Отметка
+     ставится и во время записи, и при проигрывании; собираются во вкладке
+     «Важное». Из встречи выносят решение, а не весь текст. */
+  marks: {},
+  /* auto — чем вызвана запись (звонок, напоминание о встрече), пусто у ручного
+     старта; hints — подсказки, пришедшие за встречу. */
+  rec: { on: false, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: null, hints: [] },
+  sheet: null, setPane: null, sort: 'date', sortDir: 'desc',
+  newFolderColor: 1, moveAfterCreate: null,
+  /* Добавлено 27.08.2026 по спеке «Сверка прототипов с описанием работы»:
+     диктофоны, источник записи, очередь отправки, подтверждение. */
+  devId: 'a1', micSrc: 'Автоматически', confirm: null, hintsOpen: false, listen: null,
+  /* Откуда открыли запись — чтобы «назад» вернуло туда же, а не в общий список. */
+  came: null,
+  /* Шаблон, которым разбираются НОВЫЕ записи. Перенесён из настольного
+     28.08.2026: там он был, здесь нет, то есть один прототип обещал управление
+     будущими разборами, а второй молчал. Работа 4 проверки удобства («сделайте,
+     чтобы следующие встречи разбирались по вашей структуре») на телефоне из-за
+     этого не проходилась вовсе. */
+  tplDefault: null
+};
+/* Платформа оболочки. Приложение выходит на iOS и Android, манеры у них разные,
+   поэтому оболочка выбирается, а не усредняется. Владелец значения один. */
+let OS = 'ios';
+function setOs(os) {
+  OS = os === 'android' ? 'android' : 'ios';
+  document.getElementById('phone').setAttribute('data-os', OS);
+  document.querySelectorAll('#osSwitch button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.setos === OS));
+}
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+/* ================================ ИКОНКИ ================================== */
+const ic = (p, extra) => `<svg class="fm-i${extra ? ' ' + extra : ''}" viewBox="0 0 16 16">${p}</svg>`;
+const I = {
+  files:   '<path d="M2 5.2c0-.7.6-1.2 1.2-1.2h2.3c.4 0 .8.2 1 .5l.6.9h4.7c.7 0 1.2.5 1.2 1.2v4.2c0 .7-.5 1.2-1.2 1.2H3.2c-.6 0-1.2-.5-1.2-1.2V5.2z"/>',
+  search:  '<circle cx="7" cy="7" r="4.2"/><path d="M10.2 10.2 13.5 13.5"/>',
+  ai:      '<path d="M8 2.2l1.4 3.4L13 7l-3.6 1.4L8 12l-1.4-3.6L3 7l3.6-1.4z"/><path d="M12.4 11.2l.5 1.2 1.2.5-1.2.5-.5 1.2-.5-1.2-1.2-.5 1.2-.5z"/>',
+  tpl:     '<rect x="2.5" y="2.5" width="11" height="11" rx="1.2"/><path d="M2.5 6h11M6 6v7.5"/>',
+  more:    '<circle cx="4" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r="1.1" fill="currentColor" stroke="none"/>',
+  mic:     '<path d="M8 10.5a2.5 2.5 0 0 0 2.5-2.5V4a2.5 2.5 0 0 0-5 0v4A2.5 2.5 0 0 0 8 10.5zM4 8a4 4 0 0 0 8 0M8 12.5V14"/>',
+  back:    '<path d="M13 8H3.5M7 4 3 8l4 4"/>',          /* Material: стрелка */
+  backIos: '<path d="M10 3 5 8l5 5"/>',                   /* Apple: шеврон */
+  go:      '<path d="M6 4.5 9.5 8 6 11.5"/>',
+  caretD:  '<path d="M4 6.5 8 10.5 12 6.5"/>',
+  close:   '<path d="M4 4l8 8M12 4l-8 8"/>',
+  check:   '<path d="M3.5 8.5 6.5 11.5 12.5 5"/>',
+  plus:    '<path d="M8 3.5v9M3.5 8h9"/>',
+  trash:   '<path d="M3.5 5h9M6 5V3.5h4V5M5 5l.6 8.5h4.8L11 5"/>',
+  folder:  '<path d="M2 5.2c0-.7.6-1.2 1.2-1.2h2.3c.4 0 .8.2 1 .5l.6.9h4.7c.7 0 1.2.5 1.2 1.2v4.2c0 .7-.5 1.2-1.2 1.2H3.2c-.6 0-1.2-.5-1.2-1.2V5.2z"/>',
+  unfiled: '<path d="M2.5 4.5h11v7a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-7zM2.5 8.5h3l1 1.5h3l1-1.5h3"/>',
+  pencil:  '<path d="M11.2 2.8a1.3 1.3 0 0 1 1.8 1.8L5.6 12 3 13l1-2.6 7.2-7.6z"/>',
+  share:   '<path d="M8 10.5V2.5M5 5.5 8 2.5l3 3M3.5 9v3.5a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V9"/>',
+  export:  '<path d="M8 2.5v8M5 7.5 8 10.5l3-3M3.5 12.5h9"/>',
+  device:  '<rect x="4" y="2" width="8" height="12" rx="2"/><path d="M6.5 4.5h3"/>',
+  file:    '<path d="M9.5 2.5H4.5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V5.5L9.5 2.5zM9 2.5v3h3"/>',
+  book:    '<path d="M3 3.5h4a2 2 0 0 1 2 2v8a1.6 1.6 0 0 0-1.6-1.6H3V3.5zM13 3.5H9.6A1.6 1.6 0 0 0 8 5.1v8.4A1.6 1.6 0 0 1 9.6 12H13V3.5z"/>',
+  wave:    '<path d="M2 8h1.5M5 5v6M8 3v10M11 5.5v5M13.5 8H14"/>',
+  gear:    '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.6M8 12.6v1.6M1.8 8h1.6M12.6 8h1.6M3.6 3.6l1.1 1.1M11.3 11.3l1.1 1.1M12.4 3.6l-1.1 1.1M4.7 11.3l-1.1 1.1"/>',
+  user:    '<circle cx="8" cy="6" r="2.5"/><path d="M3.5 13.5c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4"/>',
+  cloud:   '<path d="M4.5 11.5h6.2a2.3 2.3 0 0 0 .3-4.6A3.4 3.4 0 0 0 4.6 6.4 2.6 2.6 0 0 0 4.5 11.5z"/>',
+  info:    '<circle cx="8" cy="8" r="5.5"/><path d="M8 7v4M8 5.2v.6"/>',
+  crown:   '<path d="M2.5 11.5h11l-1-6-3 2L8 4l-1.5 3.5-3-2z"/>',
+  lang:    '<circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c1.6 1.6 2.4 3.5 2.4 5.5S9.6 12.4 8 13.5C6.4 12.4 5.6 10 5.6 8S6.4 4.1 8 2.5z"/>',
+  bell:    '<path d="M5 7a3 3 0 0 1 6 0v3l1 2H4l1-2V7zM6.8 13.5a1.3 1.3 0 0 0 2.4 0"/>',
+  spin:    '<path d="M8 2.2a5.8 5.8 0 1 1-5.8 5.8"/>',
+  mark:    '<path d="M4.5 2.5h7v11l-3.5-2.7-3.5 2.7z"/>',
+  stop:    '<rect x="4.5" y="4.5" width="7" height="7" rx="1.4" fill="currentColor" stroke="none"/>',
+  pause:   '<rect x="5" y="3.5" width="2.2" height="9" rx="1" fill="currentColor" stroke="none"/><rect x="8.8" y="3.5" width="2.2" height="9" rx="1" fill="currentColor" stroke="none"/>',
+  clock:   '<circle cx="8" cy="8" r="5.5"/><path d="M8 5v3.2l2.2 1.3"/>',
+  chat:    '<path d="M13.5 8.5c0 2.5-2.5 4.5-5.5 4.5-.7 0-1.4-.1-2-.3L3 13.5l.8-2.3A4.6 4.6 0 0 1 2.5 8.5C2.5 6 5 4 8 4s5.5 2 5.5 4.5z"/>',
+  sort:    '<path d="M4 4.5h9M4 8h6M4 11.5h3"/>',
+  /* Добавлено 27.08.2026: подсказки, диктофоны, связь и очередь. */
+  bulb:    '<path d="M6 12.5h4M6.6 14h2.8M8 2.2a3.8 3.8 0 0 1 2.3 6.8c-.5.4-.8 1-.8 1.6h-3c0-.6-.3-1.2-.8-1.6A3.8 3.8 0 0 1 8 2.2z"/>',
+  lock:    '<rect x="3.5" y="7" width="9" height="6.5" rx="1.3"/><path d="M5.8 7V5.2a2.2 2.2 0 0 1 4.4 0V7"/>',
+  shield:  '<path d="M8 2.2 13 4v4c0 3-2.2 5-5 5.8C5.2 13 3 11 3 8V4z"/>',
+  link:    '<path d="M6.5 9.5 9.5 6.5M6.8 4.9 8.2 3.5a2.6 2.6 0 0 1 3.7 3.7l-1.4 1.4M5.5 7.4 4.1 8.8a2.6 2.6 0 0 0 3.7 3.7l1.4-1.4"/>',
+  queue:   '<path d="M8 10.5V2.5M5.2 5.3 8 2.5l2.8 2.8M3 13h10"/>',
+  alert:   '<path d="M8 2.6 14 13H2zM8 6.4v3.2M8 11.2v.2"/>',
+  battery: '<rect x="1.5" y="5" width="11" height="6" rx="1.5"/><path d="M14 7.2v1.6"/>',
+  phone:   '<rect x="4.5" y="1.5" width="7" height="13" rx="1.6"/><path d="M7 12.6h2"/>'
+};
+
+/* ============================ ВЫБОРКИ ЭКРАНА ============================== */
+function inScope(f, sc) {
+  sc = sc || M.scope;
+  if (sc.kind === 'search') return !f.deleted && matchQ(f, sc.value);
+  if (sc.kind === 'trash') return !!f.deleted;
+  if (f.deleted) return false;
+  if (sc.kind === 'all') return true;
+  if (sc.kind === 'unfiled') return !f.folder;
+  if (sc.kind === 'folder') return f.folder === sc.value;
+  if (sc.kind === 'src') return f.src === sc.value;
+  return true;
+}
+const cnt = (kind, value) => FILES.filter(f => inScope(f, { kind, value: value || null })).length;
+const rows = () => {
+  const s = SORT[M.sort] || SORT.date, k = M.sortDir === 'asc' ? 1 : -1;
+  return FILES.filter(f => inScope(f)).sort((a, b) => k * s.cmp(s.get(a), s.get(b)));
+};
+const file = () => FILES.find(f => f.id === M.fileId);
+const isGen = (id, tab) => !!M.generated[id + ':' + tab];
+const folderColor = name => (FOLDERS.find(x => x.name === name) || {}).color || 'var(--line-border)';
+const scopeTitle = () => M.scope.kind === 'all' ? 'Все записи'
+  : M.scope.kind === 'unfiled' ? 'Без папки' : M.scope.kind === 'trash' ? 'Корзина' : M.scope.value;
+
+/* ─── Готовность записи и превью её содержания ──────────────────────────────
+   Строка списка обязана нести смысл, а не только дату и длительность: иначе
+   список читается как каталог файлов. Порядок источников превью — от разобранного
+   к сырому: первый абзац конспекта, иначе первая реплика разговора. Пока
+   расшифровки нет, превью не выдумываем — показываем состояние обработки. */
+const hasSummary = f => !f.summaryEmpty || isGen(f.id, 'summary');
+const hasTranscript = f => !f.transcriptEmpty || isGen(f.id, 'transcript');
+const firstPara = html => {
+  const m = /<p[^>]*>([\s\S]*?)<\/p>/.exec(String(html || ''));
+  return m ? plain(m[1]).replace(/\s+/g, ' ').trim() : '';
+};
+function preview(f) {
+  if (!hasTranscript(f)) return null;                       // ещё расшифровывается
+  if (hasSummary(f)) { const s = firstPara(f.summary); if (s) return s; }
+  const seg = (f.transcript || [])[0];
+  return seg ? seg.who + ': ' + seg.text : '';
+}
+
+/* ─── Отметки на слух ───────────────────────────────────────────────────────
+   Хранятся номерами реплик, а не текстом: реплика — единственное место записи,
+   у которого есть время, значит по отметке можно перевести звук. */
+const marksOf = id => M.marks[id] || [];
+function toggleMark(id, seg) {
+  const cur = marksOf(id), i = cur.indexOf(seg);
+  M.marks[id] = i > -1 ? cur.filter(x => x !== seg) : cur.concat(seg).sort((a, b) => a - b);
+  return i < 0;
+}
+/* Реплики записи в едином виде: время в секундах считаем один раз здесь, чтобы
+   подсветка, переход по нажатию и отметки шли от одного и того же числа. */
+const segsOf = f => (f.transcript && f.transcript.length ? f.transcript : [])
+  .map((s, i) => ({ ...s, i, sec: hms(s.time) }));
+const curSeg = f => {
+  const at = posOf(f), ss = segsOf(f);
+  for (let i = ss.length - 1; i >= 0; i--) if (ss[i].sec <= at) return i;
+  return ss.length ? 0 : -1;
+};
+
+/* ─── Волна записи ─────────────────────────────────────────────────────────
+   Высоты полос выведены из номера записи, поэтому волна у записи всегда одна и
+   та же. Настоящей огибающей звука в прототипе нет и быть не может — важно, что
+   волна показывает пройденное место и отметки, а не «красивую картинку». */
+const WAVE_N = 58;
+const waveAmp = (f, i) => {
+  const s = String(f.id) + ':' + i;
+  let h = 2166136261;                                  // целочисленный разброс, без плавающей точки
+  for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = (h * 16777619) >>> 0; }
+  return 18 + h % 82;
+};
+function waveHtml(f) {
+  const at = posOf(f), pos = f.sec ? at / f.sec * WAVE_N : 0;
+  const mk = new Set(marksOf(f.id).map(i => {
+    const s = segsOf(f)[i];
+    return s && f.sec ? Math.round(s.sec / f.sec * WAVE_N) : -1;
+  }));
+  return `<div class="m-wave" id="wave" role="slider" aria-label="${t('Перейти по записи')}">${
+    Array.from({ length: WAVE_N }, (_, i) => `<span class="${i < pos ? 'is-played' : ''}${
+      mk.has(i) ? ' is-marked' : ''}" style="height:${waveAmp(f, i)}%"></span>`).join('')}</div>`;
+}
+
+/* ============================== СООБЩЕНИЕ ================================= */
+let toastTimer = null;
+function toast(text, minor) {
+  /* Изменение, которое человек видит на экране (запись переехала в папку,
+     появилась закладка), у Apple не подтверждают: HIG просит подтверждать
+     только существенное и предупреждать о потерях. У Material снэкбар о таком
+     сообщать вправе — это его штатная роль. */
+  if (OS !== 'android' && minor) return;
+  const el = $('#toast');
+  el.textContent = t(text); el.classList.add('is-open');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-open'), 2600);
+}
+
+/* ============================== ПАНЕЛЬ И ЭКРАНЫ ===========================
+   Строение экрана мобильное: закреплённая тонкая панель с действиями, крупный
+   заголовок ВНУТРИ прокрутки (уезжает вместе с содержимым и оставляет в панели
+   компактный), строки собраны в скруглённые группы с воздухом по бокам.
+   ========================================================================== */
+function nav(title, opts) {
+  const o = opts || {};
+  /* На экранах без крупного заголовка (открытая запись) название стоит в панели
+     сразу; на остальных проступает, когда крупный уезжает вверх. */
+  return `
+    <div class="m-nav${o.titleAlways ? ' is-scrolled' : ''}" id="nav">
+      ${o.back ? `<button class="fm-btn fm-btn--icon" data-back="1" aria-label="Назад">${ic(OS === 'android' ? I.back : I.backIos, 'fm-i--l')}</button>`
+              : `<span style="width:var(--space-m)"></span>`}
+      <span class="m-nav__compact m-head">${title}</span>
+      <span class="m-nav__acts">${o.acts || ''}</span>
+    </div>`;
+}
+const large = (title, sub) => `
+  <div class="m-large-block">
+    <h1 class="m-large" style="margin:0">${title}</h1>
+    ${sub ? `<p class="m-sub m-dim" style="margin:0">${sub}</p>` : ''}
+  </div>`;
+
+/* ======================== ЭКРАН: ПАПКИ (главный) ==========================
+   Разделы записей — отдельный экран, а не полоса фильтров над списком: на
+   телефоне в раздел ЗАХОДЯТ, и тогда у списка остаётся один смысл — записи
+   выбранного раздела. Так устроен системный «Диктофон»: папки со счётчиками,
+   внутри — записи.
+   ========================================================================== */
+function screenFolders() {
+  const q = stats();
+  const smart = [
+    { kind: 'all', label: 'Все записи', icon: I.files },
+    { kind: 'unfiled', label: 'Без папки', icon: I.unfiled },
+    { kind: 'trash', label: 'Корзина', icon: I.trash }
+  ];
+  const row = (kind, value, label, icon, color) => `
+    <div class="m-row m-row--inset" data-scope="${kind}" data-value="${esc(value || '')}">
+      ${color ? `<span class="m-row__dot" style="background:${color};margin:0 8px"></span>`
+               : `<span class="m-row__ico">${ic(icon)}</span>`}
+      <span class="m-row__body m-body">${label}</span>
+      <span class="m-row__right">
+        <span class="m-row__val m-body m-num">${cnt(kind, value)}</span>
+        ${ic(I.go, 'fm-i--s m-row__chev')}
+      </span>
+    </div>`;
+  return nav(t('Записи'), {
+    acts: `<button class="fm-btn fm-btn--icon" data-go="search" aria-label="${t('Поиск')}">${ic(I.search, 'fm-i--l')}</button>
+           <button class="fm-btn fm-btn--icon" data-sheet="newfolder" aria-label="${t('Новая папка')}">${ic(I.plus, 'fm-i--l')}</button>`
+  })
+  + `<div class="m-scroll m-scroll--fab" id="scroll">
+      ${large(t('Записи'), `${q.n} ${plZap(q.n)} · ${num(q.hours, 1)} ${t('ч')}`)}
+      <!-- Состояние, в котором сотрудник окажется чаще всего: связь и очередь
+           отправки. Полоса нажимается и ведёт на экран отправки. -->
+      ${(!LINK.live || QUEUE.length) ? `<button class="m-linkbar ${LINK.live ? '' : 'is-off'}" data-go="outbox"
+          style="width:calc(100% - var(--size-10x));border:none;font-family:inherit;text-align:left;cursor:pointer">
+          <span class="m-linkbar__dot"></span>
+          <span class="m-linkbar__txt m-cap">${t(LINK.live
+            ? 'Записи ждут отправки на сервер'
+            : 'Связи нет — запись доедет, подсказки опоздают')}</span>
+          ${QUEUE.length ? `<span class="fm-tag">${t('в очереди')} ${QUEUE.length}</span>` : ''}
+        </button>` : ''}
+      ${micFallback() ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
+        <span>${t('Диктофон не на связи — записывает микрофон телефона.')}</span></div>` : ''}
+      ${isMandatory() ? `<div class="m-warn m-cap">${ic(I.lock, 'fm-i--s')}
+        <span>${t('Организация включила режим «запись обязательна»: встречи записываются, прервать запись нельзя.')}</span></div>` : ''}
+      <div class="m-group">${smart.map(x => row(x.kind, null, t(x.label), x.icon)).join('')}</div>
+      <div class="m-grouphead m-cap">${t('Папки')}</div>
+      <div class="m-group">${FOLDERS.map(f => row('folder', f.name, esc(f.name), null, f.color)).join('')}</div>
+      <div class="m-grouphead m-cap">${t('Мой лимит')}</div>
+      <!-- Отступы по бокам даёт ОБЁРТКА, а не сама карточка: у карточки ширина
+           100% родителя, поэтому боковой отступ прибавлялся к ней и выталкивал
+           её за правый край экрана на 20 px — вылезала она даже за корпус
+           телефона. Так же обёрнуты карточки шаблонов; второго приёма отступов
+           не заводим (правка 28.08.2026 по замечанию владельца).
+           Обратных кавычек в комментариях внутри разметки быть не должно: она
+           собирается шаблонной строкой, и кавычка её закрывает. -->
+      <div class="m-pad" style="margin-bottom:var(--size-4x)">
+      <button class="m-card" data-go="membership">
+        <div style="display:flex;align-items:center;gap:var(--space-m)">
+          <h3 class="m-head" style="flex:1 1 auto">${t('Личное пространство')}</h3>
+          ${ic(I.go, 'fm-i--s m-row__chev')}
+        </div>
+        <div class="m-quota__rail"><div class="m-quota__fill" style="width:${q.leftPct}%"></div></div>
+        <p class="m-cap m-dim">${phraseQuota(q)}</p>
+      </button>
+      </div>
+      <div class="m-bottom"></div>
+    </div>`;
+}
+
+/* ─── Строка записи и деление списка по времени ─────────────────────────────
+   Список группируется по времени — так «то, что было вчера» находится без
+   поиска и сортировки; внутри группы дата уже не повторяется, остаётся время.
+   При другом порядке (по названию, по длительности) деление по дням теряет
+   смысл: тогда группа одна, а её подпись называет выбранный порядок. */
+const SORTS = [['date', 'По времени'], ['name', 'По названию'], ['dur', 'По длительности']];
+const SORT_LABEL = Object.fromEntries(SORTS);
+function byDay(list) {
+  if (M.sort !== 'date') return [{ label: t(SORT_LABEL[M.sort] || ''), items: list }];
+  const out = [], seen = new Map();
+  list.forEach(f => {
+    const k = dayKey(f);
+    if (!seen.has(k)) { const g = { label: fmtDayGroup(f.ts), items: [] }; seen.set(k, g); out.push(g); }
+    seen.get(k).items.push(f);
+  });
+  return out;
+}
+const fmtTimeOnly = ts => { const d = new Date(ts); return p2(d.getHours()) + ':' + p2(d.getMinutes()); };
+function fileRow(f, timeOnly) {
+  const pv = preview(f);
+  return `<div class="m-row m-row--inset" data-file="${f.id}">
+      <span class="m-row__body">
+        <span class="m-row__title m-body">${esc(f.title)}</span>
+        ${pv === null
+          ? `<span class="m-row__prev m-sub m-row__prev--wait">${ic(I.spin, 'fm-i--s')}<span>${t('Расшифровываем…')}</span></span>`
+          : pv ? `<span class="m-row__prev m-sub">${esc(pv)}</span>` : ''}
+        <span class="m-row__meta m-cap">
+          ${f.folder ? `<span class="m-row__dot" style="background:${folderColor(f.folder)}"></span>` : ''}
+          <span class="m-num">${esc(timeOnly ? fmtTimeOnly(f.ts) : fmtShort(f.ts))}</span>
+          <span class="m-sep">·</span><span class="m-num">${esc(fmtDurShort(f.sec))}</span>
+          ${marksOf(f.id).length ? ic(I.mark, 'fm-i--s') : ''}
+        </span>
+      </span>
+      <button class="m-row__act" data-rowmenu="${f.id}" aria-label="${t('Ещё')}">${ic(I.more)}</button>
+    </div>`;
+}
+
+/* ==================== ЭКРАН: ЗАПИСИ ВЫБРАННОГО РАЗДЕЛА ==================== */
+function screenFiles() {
+  const r = rows();
+  const list = r.length ? byDay(r).map(g => `
+      <div class="m-grouphead m-cap">${esc(g.label)}</div>
+      <div class="m-group">${g.items.map(f => fileRow(f, M.sort === 'date')).join('')}</div>`).join('')
+    : `<div class="m-empty">
+        ${ic(M.scope.kind === 'trash' ? I.trash : I.files, 'fm-i--xl m-empty__icon')}
+        <h2 class="m-title">${M.scope.kind === 'trash' ? 'Корзина пуста' : 'Записей нет'}</h2>
+        <p class="m-sub">${M.scope.kind === 'trash' ? 'Удалённые записи хранятся здесь 30 дней.' : 'Нажмите круглую кнопку записи, чтобы записать встречу.'}</p>
+      </div>`;
+  const hours = r.reduce((a, f) => a + f.sec, 0) / 3600;
+  return nav(esc(scopeTitle()), {
+    back: true,
+    acts: `<button class="fm-btn fm-btn--icon" data-go="search" aria-label="${t('Поиск')}">${ic(I.search, 'fm-i--l')}</button>
+           <button class="fm-btn fm-btn--icon" data-sheet="sort" aria-label="${t('Порядок')}">${ic(I.sort, 'fm-i--l')}</button>`
+  })
+  + `<div class="m-scroll m-scroll--fab" id="scroll">
+      ${large(esc(scopeTitle()), `${r.length} ${plZap(r.length)} · ${num(hours, 1)} ${t('ч')}`)}
+      ${list}
+      <div class="m-bottom"></div>
+    </div>`;
+}
+
+/* ============================ ЭКРАН: ПОИСК ================================ */
+function screenSearch() {
+  const r = M.q.trim() ? FILES.filter(f => !f.deleted && matchQ(f, M.q)) : [];
+  const body = !M.q.trim()
+    ? `<div class="m-empty">${ic(I.search, 'fm-i--xl m-empty__icon')}
+        <h2 class="m-title">${t('Что ищем?')}</h2>
+        <p class="m-sub">${t('Ищем по названию записи, говорящим и тексту разговора — во всех')} ${alive().length} ${plZapV(alive().length)}.</p></div>`
+    : !r.length
+    ? `<div class="m-empty">${ic(I.search, 'fm-i--xl m-empty__icon')}
+        <h2 class="m-title">${t('Ничего не нашли')}</h2>
+        <p class="m-sub">${t('Попробуйте другое слово: ищем по названию, говорящим и тексту разговора.')}</p></div>`
+    : `<div class="m-grouphead m-cap">${t('нашли')} ${r.length} ${plZap(r.length)}</div>
+       ${r.map(f => {
+         /* Найденное показываем цитатой с её временем и уводим прямо в это
+            место записи: ответ «где это сказали», а не «в какой записи искать».
+            Совпало только название — цитаты нет, и придумывать её нельзя. */
+         const hits = segsOf(f).filter(s => matchSeg(s, M.q)).slice(0, 2);
+         return `<div class="m-group">
+           <div class="m-row m-row--inset" data-file="${f.id}">
+             <span class="m-row__body">
+               <span class="m-row__title m-body">${hl(f.title, M.q)}</span>
+               <span class="m-row__meta m-cap"><span class="m-num">${esc(fmtShort(f.ts))}</span>
+                 <span class="m-sep">·</span><span class="m-num">${esc(fmtDurShort(f.sec))}</span></span>
+             </span>${ic(I.go, 'fm-i--s m-row__chev')}
+           </div>
+           ${hits.map(s => `<button class="m-hitrow" data-file="${f.id}" data-at="${s.sec}">
+             <span class="m-time m-cap">${esc(s.time)}</span>
+             <span class="m-hitrow__txt m-sub">${
+               /* Бюджет цитаты — то, что влезает в две строки, минус имя
+                  говорящего: иначе окно вокруг найденного слова обрезает уже
+                  разметка, и подсветка снова уезжает за край. */
+               hl(s.who + ': ' + snippet(s.text, M.q, Math.max(40, 70 - s.who.length)), M.q)}</span>
+           </button>`).join('')}
+         </div>`;
+       }).join('')}`;
+  return nav(t('Поиск'), { back: true })
+    + `<div class="m-scroll" id="scroll">
+        ${large(t('Поиск'))}
+        <div class="m-pad" style="padding-bottom:var(--size-4x)">
+          <div class="m-searchwrap">${ic(I.search)}
+            <input class="fm-input" id="q" value="${esc(M.q)}" autocomplete="off"
+              placeholder="${t('Название, говорящий или слово из разговора')}">
+          </div>
+        </div>
+        ${body}<div class="m-bottom"></div>
+      </div>`;
+}
+
+/* ============================ ЭКРАН: ЗАПИСЬ =============================== */
+const posOf = f => Math.max(0, Math.min(f.sec, f.at || 0));
+let playTimer = null;
+function paintPlayer() {
+  const f = file(), w = $('#wave'); if (!f || !w) return;
+  const at = posOf(f), pos = f.sec ? at / f.sec * WAVE_N : 0;
+  [...w.children].forEach((b, i) => b.classList.toggle('is-played', i < pos));
+  document.querySelectorAll('#plAt, #plAtFull').forEach(el =>
+    el.textContent = fmtTotal(Math.round(at)));
+  const left = $('#plLeft');
+  if (left) left.textContent = '−' + fmtTotal(Math.max(0, Math.round(f.sec - at)));
+  $('#btnPlay').innerHTML = M.playing
+    ? `<svg class="fm-i fm-i--l" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><rect x="7" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.4" y="5" width="3.6" height="14" rx="1.2"/></svg>`
+    : `<svg class="fm-i fm-i--l" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8.5 5.2l11 6.8-11 6.8z"/></svg>`;
+  const mb = $('#btnMark');
+  if (mb) mb.classList.toggle('is-on', marksOf(f.id).includes(curSeg(f)));
+  paintNow();
+}
+/* Прокрутка ВНУТРИ содержимого экрана, а не страницей: scrollIntoView тянет
+   все прокручиваемые предки и уводит вверх сам корпус телефона. */
+function scrollWithin(el, center) {
+  const sc = $('#scroll'); if (!sc || !el) return;
+  const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop;
+  if (center) { sc.scrollTop = Math.max(0, top - sc.clientHeight / 2 + el.offsetHeight / 2); return; }
+  const view = top - sc.scrollTop;
+  if (view < 0) sc.scrollTop = top - SEG_AIR;
+  else if (view + el.offsetHeight > sc.clientHeight) sc.scrollTop = top + el.offsetHeight - sc.clientHeight + SEG_AIR;
+}
+const SEG_AIR = 24;            // воздух вокруг подъехавшей реплики, шестая ступень шкалы 4px
+/* Подсветка звучащего места. Текст и звук сшиты: пока идёт проигрывание,
+   реплика сама подъезжает к глазам; при остановке — не дёргаем прокрутку. */
+function paintNow() {
+  const f = file(); if (!f) return;
+  const cs = curSeg(f);
+  document.querySelectorAll('.m-seg-row').forEach(el => {
+    const on = +el.dataset.seg === cs;
+    if (on !== el.classList.contains('is-now')) {
+      el.classList.toggle('is-now', on);
+      if (on && M.playing) scrollWithin(el, false);
+    }
+  });
+}
+function stopPlay() { clearInterval(playTimer); playTimer = null; M.playing = false; }
+function setPlaying(on) {
+  clearInterval(playTimer); playTimer = null;
+  M.playing = on;
+  if (on) playTimer = setInterval(() => {
+    const f = file(); if (!f) return stopPlay();
+    f.at = Math.min(f.sec, posOf(f) + M.speed);
+    if (f.at >= f.sec) stopPlay();
+    paintPlayer();
+  }, 1000);
+  paintPlayer();
+}
+const seek = dir => `<button class="m-seek" data-seek="${dir * 15}"
+    aria-label="${dir < 0 ? t('Назад 15 секунд') : t('Вперёд 15 секунд')}">
+  <svg class="fm-i fm-i--l" viewBox="0 0 24 24">
+    <path d="${dir < 0 ? 'M12 5V1.5L7 5l5 3.5V5a8.5 8.5 0 1 1-8.5 8.5' : 'M12 5V1.5L17 5l-5 3.5V5a8.5 8.5 0 1 0 8.5 8.5'}"/>
+    <text x="12" y="16.4" font-size="7.6" text-anchor="middle" fill="currentColor" stroke="none">15</text>
+  </svg></button>`;
+
+/* Проигрыватель открытой записи — АКСЕССУАР панели разделов: одна строка с
+   волной, как мини-плеер в системной Музыке. Полный пульт (±15 секунд,
+   скорость) открывается шторкой по нажатию на время: на экране записи главное
+   содержание, а не пульт. */
+function miniPlayer(f) {
+  if (!f) return '';
+  const at = posOf(f);
+  return `${waveHtml(f)}
+      <button class="m-play m-play--mini" id="btnPlay" aria-label="${t('Воспроизвести')}">
+        <svg class="fm-i fm-i--l" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8.5 5.2l11 6.8-11 6.8z"/></svg>
+      </button>
+      <span class="m-acc__side">
+        <button class="fm-btn fm-btn--icon" id="btnMark" aria-label="${t('Отметить это место')}">${ic(I.mark, 'fm-i--l')}</button>
+        <button class="fm-btn fm-btn--text m-sub m-num" data-sheet="player" aria-label="${t('Проигрыватель')}"
+          style="min-width:56px;padding:0;color:var(--text-primary)"><span id="plAt">${fmtTotal(Math.round(at))}</span></button>
+      </span>`;
+}
+function screenNote() {
+  const f = file();
+  const tabs = [{ id: 'transcript', name: 'Расшифровка' }, { id: 'summary', name: 'Конспект' },
+                { id: 'marks', name: 'Важное' },
+                ...(f.custom || []).map(c => ({ id: c.id, name: c.name }))];
+  return nav(esc(f.title), {
+    back: true,
+    /* Два действия в панели, не три: «поделиться» живёт в меню «…» рядом с
+       выгрузкой и переименованием, а второй путь к тому же действию отнимал у
+       названия записи половину ширины. */
+    acts: `<button class="fm-btn fm-btn--icon" data-find="1" aria-label="${t('Найти в записи')}">${ic(I.search, 'fm-i--l')}</button>
+           <button class="fm-btn fm-btn--icon" data-rowmenu="${f.id}" aria-label="${t('Ещё')}">${ic(I.more, 'fm-i--l')}</button>`
+  })
+  + (M.findOpen ? `<div class="m-findbar">
+      <div class="m-searchwrap">${ic(I.search)}
+        <input class="fm-input" id="findQ" value="${esc(M.find)}" autocomplete="off"
+          placeholder="${t('Слово из разговора')}">
+      </div>
+      <button class="fm-btn fm-btn--text" data-findclose="1">${t('Закрыть')}</button>
+    </div>` : '')
+  + `<div class="m-scroll m-scroll--doc" id="scroll">
+      <div class="m-notehead">
+        <h1 class="m-large m-data" style="margin:0;font-size:26px;line-height:32px">${esc(f.title)}</h1>
+        <p class="m-sub m-dim" style="margin:4px 0 0"><span class="m-num">${esc(fmtShort(f.ts))}</span>
+          <span class="m-sep">·</span> <span class="m-num">${esc(f.dur)}</span>${
+            f.folder ? `<span class="m-sep"> · </span><span class="m-data">${esc(f.folder)}</span>` : ''}</p>
+      </div>
+      <div class="m-segsrow"><div class="m-segs">
+        ${tabs.map(x => `<button class="m-seg-btn ${x.id === M.tab ? 'is-on' : ''}" data-tab="${x.id}">${esc(x.name)}</button>`).join('')}
+        <button class="m-seg-btn" data-sheet="addtpl" aria-label="${t('Добавить разбор по шаблону')}">${ic(I.plus, 'fm-i--s')}</button>
+      </div></div>
+      ${noteBody(f)}<div class="m-bottom"></div></div>`;
+}
+/* Реплика: нажатие переводит звук к ней, отмеченная несёт закладку. Найденное
+   слово подсвечено — иначе непонятно, чем реплика совпала с запросом. */
+/* Сравнение с запросом и подсветка идут через владельца в общей части
+   (`matchText`, `qRe`, `qWords`): человек ищет именительным падежом, а в
+   разговоре слово стоит в другом — своё точное вхождение здесь давало «ничего
+   не нашли» на реплике, которая в записи есть. */
+const matchSeg = (s, q) => matchText(s.who + ' ' + s.text, q);
+function hl(text, q) {
+  const s = esc(text), re = qRe(q);
+  if (!re) return s;
+  /* Подставляется группа 1, а не всё совпадение: в него входит ведущий
+     разделитель (пробел, запятая), и он не должен попадать в подсветку. */
+  return s.replace(re, (m, w) => m.slice(0, m.length - w.length) + '<span class="m-hl">' + w + '</span>');
+}
+/* Цитата в списке найденного берётся ВОКРУГ найденного слова, а не с начала
+   реплики: обрезка по началу прятала само совпадение, и попадание читалось как
+   ошибка поиска. */
+function snippet(text, q, len) {
+  const s = String(text), n = len || 110;
+  if (s.length <= n) return s;
+  /* Ищем ОСНОВУ слова, а не набранное целиком: иначе окно цитаты строилось бы
+     вокруг совпадения, которого в тексте нет, и обрезка снова прятала бы
+     найденное. */
+  const w = qWords(q)[0] || '';
+  const at = w ? s.toLowerCase().indexOf(w) : -1;
+  if (at < 0) return s.slice(0, n) + '…';
+  const from = Math.max(0, at - Math.round((n - w.length) / 2));
+  const to = Math.min(s.length, from + n);
+  return (from ? '…' : '') + s.slice(from, to).trim() + (to < s.length ? '…' : '');
+}
+function segRow(f, s, cs) {
+  return `<div class="m-seg-row ${s.i === cs ? 'is-now' : ''}" data-seg="${s.i}">
+      <div class="m-seg-row__head">
+        <button class="m-who m-head m-data ${s.role === 'мы' ? 'm-who--mine' : ''}"
+          data-person="${esc(s.who)}">${esc(s.who)}</button>
+        <span class="m-time m-cap">${esc(s.time)}</span>
+        ${marksOf(f.id).includes(s.i) ? `<span class="m-seg-row__mark">${ic(I.mark, 'fm-i--s')}</span>` : ''}
+      </div>
+      <p class="m-body">${hl(s.text, M.find)}</p>
+    </div>`;
+}
+/* Название записи стоит шапкой экрана, поэтому первый заголовок документа
+   убираем, если он повторяет его же. Данные при этом не правим: у настольного
+   прототипа шапки нет и заголовок ему нужен, а общая часть у нас одна. */
+function dropDupTitle(html, title) {
+  const m = /^\s*<h1[^>]*>([\s\S]*?)<\/h1>/.exec(String(html || ''));
+  if (!m) return html;
+  const same = plain(m[1]).replace(/\s+/g, ' ').trim() === String(title).replace(/\s+/g, ' ').trim();
+  return same ? String(html).replace(m[0], '') : html;
+}
+function noteBody(f) {
+  if (M.tab === 'transcript') {
+    if (!hasTranscript(f)) return emptyGen('transcript');
+    const all = segsOf(f).length ? segsOf(f) : segsOf(FILES[0]);
+    const cs = curSeg(f), q = M.find.trim();
+    const ss = q ? all.filter(s => matchSeg(s, q)) : all;
+    const head = !q ? '' : ss.length
+      ? `<p class="m-pad m-cap m-dim" style="margin:var(--space-m) 0">${phraseFoundInNote(ss.length, all.length)}</p>`
+      : `<div class="m-empty"><h2 class="m-title">${t('В этой записи такого нет')}</h2>
+          <p class="m-sub">${t('Ищем по говорящим и тексту разговора внутри открытой записи.')}</p></div>`;
+    return head + ss.map(s => segRow(f, s, cs)).join('');
+  }
+  if (M.tab === 'summary') {
+    if (!hasSummary(f)) return emptyGen('summary');
+    return `<div class="m-doc">${dropDupTitle(f.summary || FILES[0].summary, f.title)}</div>`;
+  }
+  /* Отмеченное на слух: из встречи выносят решение, а не весь текст. */
+  if (M.tab === 'marks') {
+    const all = segsOf(f).length ? segsOf(f) : segsOf(FILES[0]);
+    const mk = marksOf(f.id).filter(i => all[i]);
+    if (!mk.length) return `<div class="m-empty">
+        ${ic(I.mark, 'fm-i--xl m-empty__icon')}
+        <h2 class="m-title">${t('Пока ничего не отмечено')}</h2>
+        <p class="m-sub">${t('Нажмите закладку в проигрывателе — во время записи или при прослушивании. Отмеченные места собираются здесь и видны засечками на волне.')}</p>
+      </div>`;
+    const cs = curSeg(f);
+    return `<p class="m-pad m-cap m-dim" style="margin:var(--space-m) 0">${phraseMarked(mk.length)}</p>`
+      + mk.map(i => segRow(f, all[i], cs)).join('');
+  }
+  const c = (f.custom || []).find(x => x.id === M.tab);
+  if (!isGen(f.id, M.tab)) return emptyGen(M.tab, c && c.name);
+  return `<div class="m-doc">${f[M.tab] || FILES[0].obj}</div>`;
+}
+function emptyGen(kind, name) {
+  const tr = kind === 'transcript';
+  return `<div class="m-empty">
+      ${ic(tr ? I.wave : I.book, 'fm-i--xl m-empty__icon')}
+      <h2 class="m-title">${t('Можно формировать')}</h2>
+      <p class="m-sub">${t(tr ? 'Расшифровка появится здесь после обработки записи' : 'Конспект появится здесь после обработки записи')}</p>
+      <div style="margin-top:var(--size-6x)">
+        <button class="fm-btn fm-btn--primary" data-gen="${esc(kind)}">${ic(I.ai)} ${t('Сформировать')}${name ? ': ' + esc(name) : ''}</button>
+      </div>
+    </div>`;
+}
+const fmtSpeed = v => String(v).replace('.', ',') + '×';
+const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+
+/* ============================ ЭКРАН: СПРОСИТЬ ============================= */
+function askHits(q, folder) {
+  if (!qWords(q).length) return [];
+  const out = [];
+  alive().filter(f => !folder || f.folder === folder).forEach(f => {
+    (f.transcript || []).forEach(x => {
+      /* Счёт совпавших слов — общий владелец в общей части: тот же разбор на
+         основы и та же граница слова, что у поиска по записям. */
+      const score = countWords(x.who + ' ' + x.text, q);
+      if (score) out.push({ f, x, score });
+    });
+  });
+  return out.sort((a, b) => b.score - a.score).slice(0, 6);
+}
+function screenAsk() {
+  const hits = M.ask.asked ? askHits(M.ask.q, M.ask.folder) : null;
+  const folder = M.ask.folder ? t(esc(M.ask.folder)) : null;
+  const recs = hits ? new Set(hits.map(h => h.f.id)) : null;
+  return nav(t('Спросить ИИ'), {
+    acts: `<button class="fm-btn fm-btn--icon" data-sheet="askscope" aria-label="${t('Где искать')}">${ic(I.folder, 'fm-i--l')}</button>`
+  })
+  + `<div class="m-scroll" id="scroll">
+      ${large(t('Спросить ИИ'), t('Ответ собирается из ваших записей'))}
+      <div class="m-pad" style="padding-bottom:var(--size-4x)">
+        <div style="display:flex;gap:var(--space-m)">
+          <div class="m-searchwrap" style="flex:1 1 auto">${ic(I.ai)}
+            <input class="fm-input" id="askQ" value="${esc(M.ask.q)}" placeholder="${t('О чём спросить?')}">
+          </div>
+          <button class="fm-btn fm-btn--primary fm-btn--icon" id="askGo" style="color:var(--text-contrast);width:48px"
+            aria-label="${t('Спросить')}">${ic(I.go, 'fm-i--l')}</button>
+        </div>
+        <p class="m-cap m-dim" style="margin:var(--space-m) 0 0">
+          ${t('Где искать')}: ${folder ? '«' + folder + '»' : t('по всем записям')}</p>
+      </div>
+      ${!M.ask.asked ? `<div class="m-askchips">${
+        ASK_TIPS
+          .map(q => `<button data-askq="${esc(q)}">${ic(I.ai)}<span>${q}</span></button>`).join('')}</div>` : ''}
+      ${hits ? (hits.length ? `<div class="m-answer">
+          <p><strong>${phraseFound(hits.length, recs.size, folder)}.</strong></p>
+          ${hits.map(h => `<p>${esc(h.x.who)}: ${esc(h.x.text)}<br>
+            <button class="m-cite" data-file="${h.f.id}" data-at="${hms(h.x.time)}">${ic(I.file, 'fm-i--s')} ${esc(h.f.title.slice(0, 26))} · ${h.x.time}</button></p>`).join('')}
+        </div>` : `<div class="m-answer">
+          <p><strong>${phraseNothing(folder)}.</strong></p>
+          <p class="m-sub m-dim">${t('Спросите теми словами, которые могли звучать в разговоре: приложение ищет по расшифровкам, а не по смыслу вопроса.')}</p>
+        </div>`) : ''}
+      <div class="m-bottom"></div>
+    </div>`;
+}
+
+/* ============================ ЭКРАН: ШАБЛОНЫ ============================== */
+function screenTemplates() {
+  return nav(t('Шаблоны'), {
+    acts: `<button class="fm-btn fm-btn--icon" data-newtpl="1" aria-label="${t('Создать шаблон')}">${ic(I.plus, 'fm-i--l')}</button>`
+  })
+  + `<div class="m-scroll" id="scroll">
+      ${large(t('Шаблоны'), t('Разбор записи по вашим правилам'))}
+      <div class="m-pad">${TEMPLATES.map(tpl => `
+        <button class="m-card" data-tpl="${esc(tpl.t)}">
+          <h3 class="m-head">${esc(tpl.t)}${M.tplDefault === tpl.t
+            ? ` <span class="fm-tag fm-tag--green">${t('по умолчанию')}</span>` : ''}</h3>
+          <p class="m-sub m-dim">${esc(tpl.s)}</p>
+          <!-- Значок часов рядом с числом читался как время. Считаем
+               применения, поэтому их и называем словом. -->
+          <span class="m-card__foot m-cap"><span class="m-num">${num(tpl.uses, 0)}</span> ${plPrim(tpl.uses)} · ${t(tpl.author)}</span>
+        </button>`).join('')}</div>
+      <div class="m-bottom"></div>
+    </div>`;
+}
+
+/* ============================ ЭКРАН: КВОТА ================================ */
+function screenMembership() {
+  const q = stats();
+  return nav(t('Квота и лимиты'), { back: true })
+  + `<div class="m-scroll" id="scroll">
+      ${large(t('Квота и лимиты'), t('Личное пространство'))}
+      <div class="m-pad">
+        <div class="m-card" style="cursor:default">
+          <h3 class="m-head">${t('Мой лимит в этом месяце')}</h3>
+          <div class="m-quota__rail"><div class="m-quota__fill" style="width:${q.leftPct}%"></div></div>
+          <p class="m-body">${phraseQuota(q, true)}</p>
+          <p class="m-cap m-dim" style="margin-top:var(--space-xs)">${t('Обновится')} ${q.renew} 00:00</p>
+        </div>
+        <div class="m-card" style="cursor:default">
+          <h3 class="m-head">${t('Нужно больше')}</h3>
+          <p class="m-sub m-dim">${t('Личный лимит выделяет администратор пространства из квоты организации — по заявке.')}</p>
+          <div style="margin-top:var(--size-4x)"><button class="fm-btn fm-btn--primary fm-btn--block" data-askmore="1">${t('Запросить расширение')}</button></div>
+        </div>
+      </div>
+      <div class="m-grouphead m-cap">${t('Как пользуетесь')}</div>
+      <div class="m-group">
+        ${[[t('Записей'), q.n], [t('Часов записи'), num(q.hours, 1)], [t('Дней с записями'), q.days],
+           [t('В среднем за день'), num(q.perDay, 1) + ' ' + t('ч')], [t('Часы активности'), q.peak]]
+          .map(([label, v]) => `<div class="m-row" style="cursor:default">
+            <span class="m-row__body m-body">${label}</span>
+            <span class="m-row__val m-head m-num">${v}</span></div>`).join('')}
+      </div>
+      ${q.delta === null ? '' : `<p class="m-pad m-cap" style="color:var(--${q.delta < 0 ? 'danger' : 'positive'}-base)">
+        ${q.delta > 0 ? '+' : '−'}${Math.abs(q.delta)}% ${t('к прошлому месяцу')}</p>`}
+      <div class="m-bottom"></div>
+    </div>`;
+}
+
+/* ============================ ЭКРАН: ЕЩЁ И НАСТРОЙКИ ====================== */
+const SET_ROWS = [
+  ['account', 'Аккаунт и безопасность', I.user],
+  /* Подпись короче настольной: на телефоне рядом стоит значение «Русский» и
+     шеврон, и «Язык интерфейса» с ними не помещалось — обрезались ОБА, и
+     подпись, и значение. Значок глобуса со значением снимают двусмысленность. */
+  ['lang', 'Язык', I.lang],
+  ['recording', 'Запись', I.mic],
+  ['org', 'Организация', I.shield],
+  ['cloud', 'Сервер организации', I.cloud],
+  ['notify', 'Уведомления', I.bell],
+  ['support', 'Написать в поддержку', I.chat],
+  ['about', 'О программе', I.info]
+];
+function screenMore() {
+  const q = stats();
+  return nav(t('Ещё'))
+  + `<div class="m-scroll" id="scroll">
+      ${large(t('Ещё'))}
+      <div class="m-group">
+        <div class="m-row" data-go="membership">
+          <span class="m-avatar m-head">АР</span>
+          <span class="m-row__body">
+            <span class="m-row__title m-head">a.ralovets</span>
+            <span class="m-row__meta m-row__meta--wrap m-cap"><span>${t('Личное пространство')} · ${phraseQuota(q)}</span></span>
+          </span>
+          ${ic(I.go, 'fm-i--s m-row__chev')}
+        </div>
+      </div>
+      <div class="m-grouphead m-cap">${t('Настройки')}</div>
+      <div class="m-group">
+        ${SET_ROWS.map(([k, label, icon]) => `
+          <div class="m-row m-row--inset" data-set="${k}">
+            <span class="m-row__ico">${ic(icon)}</span>
+            <span class="m-row__body m-body">${label}</span>
+            ${k === 'lang' ? `<span class="m-row__val m-body">${LANG === 'en' ? 'English' : 'Русский'}</span>` : ''}
+            ${ic(I.go, 'fm-i--s m-row__chev')}
+          </div>`).join('')}
+      </div>
+      <!-- Диктофоны и очередь отправки — не настройки, а разделы: у продукта
+           направления «Железо» устройство и есть предмет работы. -->
+      <div class="m-grouphead m-cap">${t('Устройства и отправка')}</div>
+      <div class="m-group">
+        <div class="m-row m-row--inset" data-go="devices">
+          <span class="m-row__ico">${ic(I.device)}</span>
+          <span class="m-row__body m-body">${t('Диктофоны')}</span>
+          <span class="m-row__right">
+            <span class="m-row__val m-body m-num">${devOnline().length} <span>${t('из')}</span> ${DEVICES.length}</span>
+            ${ic(I.go, 'fm-i--s m-row__chev')}</span>
+        </div>
+        <div class="m-row m-row--inset" data-go="outbox">
+          <span class="m-row__ico">${ic(I.queue)}</span>
+          <span class="m-row__body m-body">${t('Отправка')}</span>
+          <span class="m-row__right">
+            <span class="m-row__val m-body m-num">${QUEUE.length}</span>
+            ${ic(I.go, 'fm-i--s m-row__chev')}</span>
+        </div>
+      </div>
+      <div class="m-grouphead m-cap">${t('Приложения FlowMeet')}</div>
+      <div class="m-group">
+        <div class="m-row" data-getapp="1">
+          <span class="m-row__ico">${ic(I.export)}</span>
+          <span class="m-row__body">
+            <span class="m-row__title m-body">${t('FlowMeet для рабочего стола')}</span>
+            <span class="m-row__meta m-cap"><span>${t('Запись онлайн-встреч со звуком системы.')}</span></span>
+          </span>
+        </div>
+      </div>
+      <p class="m-pad m-cap m-dim">0.9.4 (${t('прототип')})</p>
+      <div class="m-bottom"></div>
+    </div>`;
+}
+/* Строка настройки: подпись, пояснение и правая часть (переключатель, значение
+   или кнопка). Разделители внутри группы — от текста, а не на всю ширину. */
+/* Выбранный источник записи может быть диктофоном — тогда его состояние
+   меняет поведение: молчащий диктофон означает, что пишет микрофон телефона.
+   Один владелец ответа на вопрос «что сейчас пишет». */
+const micDevId = () => (DEVICES.find(d => d.name === M.micSrc) || {}).id || null;
+const micIsDevice = () => !!micDevId();
+const micFallback = () => { const d = devById(micDevId()); return !!d && d.link === 'off'; };
+function optRow(title, sub, right) {
+  return `<div class="m-row m-row--inset" style="cursor:default">
+    <span class="m-row__body">
+      <span class="m-row__title m-body">${title}</span>
+      ${sub ? `<span class="m-row__meta m-row__meta--wrap m-cap"><span>${sub}</span></span>` : ''}
+    </span>
+    <span class="m-row__right">${right || ''}</span></div>`;
+}
+const tglRow = (key, def) => `<button class="m-toggle ${M.tgl[key] === undefined ? (def ? 'is-on' : '') : (M.tgl[key] ? 'is-on' : '')}" data-toggle="${key}"></button>`;
+M.tgl = {};
+const SET_PANES = {
+  account: () => `<div class="m-group">
+      ${optRow('Учётная запись организации', 'a.ralovets@infomaximum.com', `<button class="fm-btn fm-btn--sm" data-passwd="1">${t('Сменить пароль')}</button>`)}
+      ${optRow('Единый вход организации', 'Вход по корпоративной учётной записи', `<span class="fm-tag fm-tag--green">${t('Подключён')}</span>`)}
+      ${optRow('Отпечаток или код', 'Спрашивать при открытии приложения', tglRow('bio', true))}
+      ${optRow('Ключ устройства', 'Пароля нет: запросы подписывает ключ, его секретная половина не покидает телефон',
+        `<span class="fm-tag fm-tag--green">${t('Защищён')}</span>`)}
+    </div>
+    <!-- Сотрудник должен видеть СВОИ устройства и уметь отозвать доступ:
+         на настольном это было, на телефоне — нет. -->
+    <div class="m-grouphead m-cap">${t('Мои устройства')}</div>
+    <div class="m-group">
+      ${SESSIONS.map(ss => `<div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body">
+          <span class="m-row__title m-body">${esc(ss.name)}</span>
+          <span class="m-row__meta m-row__meta--wrap m-cap"><span><span>${t(ss.place)}</span> · <span>${t(ss.last)}</span>${
+            ss.this ? ' · ' + t('это устройство') : ''}${ss.revoked ? ' · ' + t('доступ отозван') : ''}</span></span>
+        </span>
+        <span class="m-row__right">${ss.this || ss.revoked ? ''
+          : `<button class="fm-btn fm-btn--sm" data-revoke="${ss.id}">${t('Отозвать')}</button>`}</span>
+      </div>`).join('')}
+    </div>
+    <p class="m-pad m-cap m-dim">${t('Отозванное устройство теряет доступ со следующего запроса. Вернуть доступ может только администратор организации.')}</p>
+    <div class="m-grouphead m-cap">${t('Доступ к библиотеке')}</div>
+    <div class="m-group">
+      ${optRow('Открывать записи организации на телефоне', 'Доступ выдаётся по галочке и живёт не дольше 90 дней, потом подтверждается заново', tglRow('lib', true))}
+    </div>
+    <p class="m-pad m-cap m-dim"><span>${t('Осталось дней доступа')}</span>: ${ORG.libraryDays}.</p>`,
+  lang: () => `<div class="m-group">
+      ${[['ru', 'Русский'], ['en', 'English']].map(([v, label]) => `
+        <div class="m-row m-row--inset" data-setlang="${v}">
+          <span class="m-row__body m-body">${label}</span>
+          <span class="m-row__val">${LANG === v ? ic(I.check, '') : ''}</span>
+        </div>`).join('')}
+    </div>
+    <p class="m-pad m-cap m-dim">${t('Речь и конспекты записей остаются на языке разговора — это данные, а не интерфейс.')}</p>`,
+  recording: () => `<div class="m-group">
+      ${optRow('Источник записи', '',
+        `<button class="fm-btn fm-btn--sm" data-sheet="mic">${t(M.micSrc)}</button>`)}
+      ${optRow('Звук системы', 'Пишет и то, что слышно из динамиков', tglRow('sysaudio', true))}
+      ${optRow('Продолжать запись в блокировке', 'Экран можно погасить, запись не прервётся', tglRow('locked', true))}
+    </div>
+    ${micIsDevice() && devById(micDevId()) && devById(micDevId()).link === 'off'
+      ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
+          <span>${t('Диктофон не на связи — записывает микрофон телефона. Как только диктофон ответит, запись пойдёт с него.')}</span></div>` : ''}
+    <!-- Автоопределение звонка и напоминания о встречах есть только на Android:
+         на iPhone платформа не отдаёт приложению начало звонка. Прототип обязан
+         показывать это различие, иначе он обещает одинаковое поведение. -->
+    <div class="m-grouphead m-cap">${t('Когда запись начинается сама')}</div>
+    <div class="m-group">
+      ${OS === 'android'
+        ? optRow('Замечать начало звонка', 'Приложение видит звонок и начинает запись само', tglRow('autorec', true))
+        : optRow('Замечать начало звонка', 'Запись начнётся по уведомлению, одним нажатием',
+            `<span class="fm-tag fm-tag--orange">${t('Одним нажатием')}</span>`)}
+      ${optRow('Напоминать о встрече из календаря', 'За минуту до встречи придёт напоминание с кнопкой записи', tglRow('calrem', true))}
+      ${optRow('Корпоративные настройки', 'Приложение принимает политику от управления устройствами организации',
+          `<span class="fm-tag fm-tag--green">${t('Принимаются')}</span>`)}
+    </div>
+    ${OS === 'ios' ? `<p class="m-pad m-cap m-dim">${t('Сам звонок приложение видит. Начать запись по нему оно не может: iPhone не даёт включить микрофон, пока приложение не открыто.')}</p>` : ''}
+    <p class="m-pad m-cap m-dim">${t('Перед записью убедитесь, что участники предупреждены о записи и расшифровке и что получено согласие, если оно требуется по закону в вашей стране и в странах участников. Приложение не проверяет согласие за вас.')}</p>`,
+  cloud: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Записи хранятся на сервере вашей организации, а не в чужом облаке.')}</p>
+    <div class="m-group">
+      ${optRow('Выгружать записи на сервер', 'Записи копируются на сервер организации автоматически', tglRow('upload', true))}
+      ${optRow('Только по Wi-Fi', 'Не расходовать мобильный трафик', tglRow('wifi', true))}
+      ${optRow('Сервер организации', 'flowmeet.local · ' + t('Связь есть'), `<span class="fm-tag fm-tag--green">${t('Включено')}</span>`)}
+    </div>
+    <p class="m-pad m-cap m-dim">${t('Адрес сервера задаёт администратор — в приложении он только показан.')}</p>`,
+  /* Режим записи задаёт организация, и приложение его только ПОКАЗЫВАЕТ:
+     пользователь режим, профиль подсказок и разрешения сервера не выбирает.
+     Переключатель для показа стоит в плашке прототипа — внутри экрана он
+     читался бы как настройка приложения (спека состава 28.08.2026, раздел Б). */
+  org: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Режим задаёт организация')} «${esc(ORG.name)}». ${t('Приложение его показывает, но выбрать не даёт: новый режим приходит с сервера и применяется сразу, без перезапуска.')}</p>
+    <div class="m-group">
+      <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body m-body">${t('Включённый режим')}</span>
+        <span class="m-row__right"><span class="fm-tag">${
+          t(isMandatory() ? 'Запись обязательна' : 'Помощник')}</span></span>
+      </div>
+    </div>
+    ${isMandatory()
+      ? `<div class="m-warn m-cap">${ic(I.lock, 'fm-i--s')}
+          <span><b>${t('Запись обязательна.')}</b> ${t('Пауза и отмена записи выключены, каждый отказ называет причину. Остановить запись можно — она сохраняется.')}</span></div>`
+      : `<p class="m-pad m-cap m-dim">${t('Помощник: сотрудник сам решает, записывать ли встречу.')}</p>`}
+    <div class="m-grouphead m-cap">${t('Подсказки во время разговора')}</div>
+    <div class="m-group">
+      ${(() => { const pr = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
+        return `<div class="m-row m-row--inset" style="cursor:default">
+          <span class="m-row__body">
+            <span class="m-row__title m-body">${t('Профиль подсказок')}</span>
+            <span class="m-row__meta m-row__meta--wrap m-cap"><span>${t(pr.what)} · ${t('задаёт')} ${t(pr.owner)}</span></span>
+          </span>
+          <span class="m-row__right"><span class="fm-tag">${t(pr.name)}</span></span>
+        </div>`; })()}
+    </div>
+    <div class="m-grouphead m-cap">${t('Что можно не записывать')}</div>
+    <div class="m-group">
+      ${optRow('Приватный звонок', 'Разрешение выдаёт сервер организации отдельно от режима записи',
+        `<span class="fm-tag">${t(ORG.privateCalls ? 'Разрешён' : 'Запрещён')}</span>`)}
+      ${optRow('Разделение голосов', 'Подключаемая служба сервера: без неё в расшифровке один говорящий',
+        `<span class="fm-tag">${t(ORG.diarization ? 'Включено' : 'Выключено')}</span>`)}
+    </div>`,
+
+  notify: () => `<div class="m-group">
+      ${optRow('Начало встречи', 'Спрашивать, начинать ли запись', tglRow('n1', true))}
+      ${optRow('Запись загружена', 'Сообщить, когда запись готова к разбору', tglRow('n2', true))}
+      ${optRow('Заметка готова', 'Сообщить, когда расшифровка и конспект собраны', tglRow('n3', true))}
+    </div>`,
+  support: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Здравствуйте. Опишите, что происходит и на каком устройстве, — так разберёмся быстрее. Либо выберите тему ниже.')}</p>
+    <div class="m-askchips" style="margin-bottom:var(--size-5x)">${
+      ['Запись не начинается', 'Диктофон не виден', 'Расшифровка не формируется', 'Вопрос про данные']
+        .map(x => `<button data-topic="${esc(x)}">${ic(I.chat)}<span>${x}</span></button>`).join('')}</div>
+    <div class="m-pad">
+      <textarea class="fm-textarea" id="supMsg" placeholder="${t('Опишите вопрос')}"></textarea>
+      <div style="margin-top:var(--size-4x)"><button class="fm-btn fm-btn--primary fm-btn--block" data-supsend="1">${t('Отправить')}</button></div>
+    </div>`,
+  about: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('FlowMeet для телефона — запись встреч, расшифровка и разбор по шаблонам внутри контура организации.')}</p>
+    <div class="m-group">
+      ${optRow('Версия приложения', 'Сборка для внутреннего показа', `<span class="m-cap m-num">0.9.4</span>`)}
+      ${optRow('Сборка', OS === 'android'
+        ? 'Две сборки: для организации (ставится из внутреннего каталога) и для Google Play'
+        : 'Сборка для организации, ставится из внутреннего каталога', `<span class="fm-tag">${t(OS === 'android' ? 'Организация' : 'Организация')}</span>`)}
+      ${optRow('Сервер распознавания', 'Внутри контура организации', `<span class="fm-tag fm-tag--green">${t('Связь есть')}</span>`)}
+      ${optRow('Журнал приложения', 'Пишется по дням, уходит на сервер организации и удаляется через две недели', `<span class="fm-tag">14 ${t('дней')}</span>`)}
+      ${optRow('Удаление приложения', 'Записи остаются на сервере организации', `<span class="fm-tag">${t('Записи остаются')}</span>`)}
+    </div>`
+};
+const SET_TITLES = Object.fromEntries(SET_ROWS.map(([k, label]) => [k, label]));
+function screenSet() {
+  const title = SET_TITLES[M.setPane] || t('Настройки');
+  return nav(title, { back: true })
+    + `<div class="m-scroll" id="scroll">${large(title)}${(SET_PANES[M.setPane] || SET_PANES.account)()}<div class="m-bottom"></div></div>`;
+}
+
+/* ═══════════ ЭКРАН: ДИКТОФОНЫ ════════════════════════════════════════════
+   Продукт направления — устройство, и телефон в этой паре главный: диктофон
+   подключается к нему по Bluetooth. Поэтому здесь не «настройка», а свой
+   экран: заряд, память, новые записи, состояние связи и сами записи.
+   antd: <List> + <Card>. */
+const devLinkTag = d => d.link === 'off'
+  ? `<span class="fm-tag fm-tag--red">${t('Не на связи')}</span>`
+  : `<span class="fm-tag fm-tag--green">${t('На связи')}</span>`;
+function devBlock(d) {
+  const off = d.link === 'off';
+  const recs = devRecs(d.id);
+  return `
+    <div class="m-group">
+      <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__ico">${ic(I.device)}</span>
+        <span class="m-row__body">
+          <span class="m-row__title m-body">${esc(d.name)}</span>
+          <span class="m-row__meta m-row__meta--wrap m-cap"><span><span>${t('серийный номер')}</span> ${esc(d.serial)}</span></span>
+        </span>
+        <span class="m-row__right">${devLinkTag(d)}</span>
+      </div>
+      <div class="m-row m-row--inset" style="cursor:default;display:block">
+        <span style="display:flex;align-items:center;gap:var(--space-m)">
+          <span class="m-body" style="flex:1 1 auto">${t('Заряд')}</span>
+          <span class="m-body m-num">${d.battery}%</span>
+        </span>
+        <span class="m-bat" style="display:block"><span class="m-bat__fill ${d.battery < 20 ? 'is-low' : ''}"
+          style="width:${d.battery}%;display:block;height:100%"></span></span>
+      </div>
+      <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body m-body">${t('Свободно')}</span>
+        <span class="m-row__right"><span class="m-row__val m-body m-num">${devSpace(d)} <span>${t('ГБ')}</span></span></span>
+      </div>
+      <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body m-body">${t('Новых записей')}</span>
+        <span class="m-row__right"><span class="m-row__val m-body m-num">${recs.length}</span></span>
+      </div>
+    </div>
+    ${off ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
+      <span>${t('Диктофон не на связи. Заряд и память показаны последние известные; записи заберём, как только он ответит.')}</span></div>` : ''}
+    ${!d.clockOk && !off ? `<div class="m-warn m-cap">${ic(I.clock, 'fm-i--s')}
+      <span>${t('Часы устройства разошлись с телефоном — время записей будет неверным.')}</span></div>` : ''}
+    ${recs.length ? `<div class="m-group">
+      ${recs.map(r => `<div class="m-row m-row--inset">
+          <span class="m-row__body">
+            <span class="m-row__title m-body">${esc(r.title)}</span>
+            <span class="m-row__meta m-cap"><span class="m-num">${esc(fmtShort(r.ts))}</span>
+              <span class="m-sep">·</span><span class="m-num">${esc(fmtDurShort(r.sec))}</span></span>
+          </span>
+          <button class="m-row__act" data-devget="${r.id}" aria-label="${t('Забрать запись')}">${ic(I.export)}</button>
+        </div>`).join('')}
+      </div>` : ''}
+    <div class="m-pad" style="margin-bottom:var(--size-5x);display:flex;flex-direction:column;gap:var(--size-3x)">
+      <button class="fm-btn fm-btn--primary fm-btn--block" data-devall="${d.id}">${t('Забрать все записи')}</button>
+      <button class="fm-btn fm-btn--block" data-devlisten="${d.id}">${M.listen === d.id ? t('Остановить прослушивание') : t('Слушать живой звук')}</button>
+      <button class="fm-btn fm-btn--block" data-devrec="${d.id}">${t('Начать запись на устройстве')}</button>
+      ${!d.clockOk ? `<button class="fm-btn fm-btn--block" data-devclock="${d.id}">${t('Сверить часы')}</button>` : ''}
+    </div>`;
+}
+function screenDevices() {
+  const on = devOnline().length;
+  return nav(t('Диктофоны'), { back: true,
+    acts: `<button class="fm-btn fm-btn--icon" data-devscan="1" aria-label="${t('Искать устройства')}">${ic(I.link, 'fm-i--l')}</button>` })
+    + `<div class="m-scroll" id="scroll">
+        ${large(t('Диктофоны'), phraseDevOnline(on, DEVICES.length))}
+        ${DEVICES.map(devBlock).join('')}
+        <div class="m-bottom"></div>
+      </div>`;
+}
+
+/* ═══════════ ЭКРАН: ОТПРАВКА ═════════════════════════════════════════════
+   Очередь ничего не удаляет: пока сервер не подтвердил приём, запись здесь.
+   Здесь же состояние связи — оно носитель подсказок. */
+function linkBar(compact) {
+  return `<div class="m-linkbar ${LINK.live ? '' : 'is-off'}">
+      <span class="m-linkbar__dot"></span>
+      <span class="m-linkbar__txt m-cap">${t(LINK.live
+        ? (compact ? 'Связь есть — подсказки в моменте' : 'Связь с сервером есть. Звук идёт на сервер во время разговора — подсказки приходят в моменте.')
+        : (compact ? 'Связи нет — запись доедет, подсказки опоздают' : 'Связи с сервером нет. Запись доедет, когда связь появится, — подсказки опоздают.'))}</span>
+      ${QUEUE.length ? `<span class="fm-tag">${t('в очереди')} ${QUEUE.length}</span>` : ''}
+    </div>`;
+}
+function screenOutbox() {
+  const mb = queueMb();
+  return nav(t('Отправка'), { back: true })
+    + `<div class="m-scroll" id="scroll">
+        ${large(t('Отправка'), QUEUE.length + ' ' + plZap(QUEUE.length) + ' · ' + num(mb, 1) + ' ' + t('МБ'))}
+        ${linkBar()}
+        ${QUEUE.length ? `<div class="m-group">
+            ${QUEUE.map(q => `<div class="m-row m-row--inset" style="cursor:default">
+              <span class="m-row__body">
+                <span class="m-row__title m-body">${esc(q.title)}</span>
+                <span class="m-row__meta m-cap"><span class="m-num">${esc(fmtDurShort(q.sec))}</span>
+                  <span class="m-sep">·</span><span><span>${num(mbOf(q.sec), 1)}</span> <span>${t('МБ')}</span></span>
+                  <span class="m-sep">·</span><span>${t(QSTATE[q.state] || q.state)}</span></span>
+              </span>
+              <button class="m-row__act" data-qone="${q.id}" aria-label="${t('Отправить')}">${ic(I.queue)}</button>
+            </div>`).join('')}
+          </div>
+          <div class="m-pad" style="margin-bottom:var(--size-5x)">
+            <button class="fm-btn fm-btn--primary fm-btn--block" data-qsend="1">${t('Отправить сейчас')}</button>
+          </div>`
+        : `<div class="m-empty">${ic(I.queue, 'fm-i--xl m-empty__icon')}
+            <h2 class="m-title">${t('Очередь пуста')}</h2>
+            <p class="m-sub">${t('Все записи приняты сервером организации.')}</p></div>`}
+        <p class="m-pad m-cap m-dim">${t('Очередь ничего не удаляет: пока сервер не подтвердил приём, запись остаётся здесь. Недописанный файл встаёт в очередь целиком, хвост дошлём отдельно.')}</p>
+        <div class="m-grouphead m-cap">${t('Место')}</div>
+        <div class="m-group">
+          <div class="m-row m-row--inset" style="cursor:default">
+            <!-- «Свободно на телефоне» не помещалось рядом со значением и
+                 обрезалось: экран и так про телефон, группа названа «Место». -->
+            <span class="m-row__body m-body">${t('Свободно')}</span>
+            <span class="m-row__right"><span class="m-row__val m-body m-num">${DISK.freeMin} <span>${t('мин записи')}</span></span></span></div>
+          <div class="m-row m-row--inset" style="cursor:default">
+            <span class="m-row__body m-body">${t('Занято очередью')}</span>
+            <span class="m-row__right"><span class="m-row__val m-body m-num">${fmtSize(queueMb())}</span></span></div>
+        </div>
+        ${diskBlocked() ? `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}
+            <span><b>${t('Новая запись не начнётся.')}</b> ${t(diskWhy())}</span></div>`
+          : `<p class="m-pad m-cap m-dim">${t('Новая запись не начинается, если в очереди больше 10 ГБ или на телефоне меньше получаса записи. Сейчас порог не достигнут.')}</p>`}
+        <div class="m-bottom"></div>
+      </div>`;
+}
+
+/* ============================== ШТОРКИ ==================================== */
+const SHEETS = {
+  sort: () => sheet(t('Порядок записей'),
+    SORTS.map(([k, label]) => item(I.caretD, label, `data-sortby="${k}"`, M.sort === k))),
+  speed: () => sheet(t('Скорость'), SPEEDS.map(v => item(I.clock, fmtSpeed(v), `data-speed="${v}"`, M.speed === v))),
+  /* Полный пульт: то, чему не место в одной строке аксессуара. */
+  player: () => {
+    const f = file(); if (!f) return sheet('', []);
+    const at = posOf(f);
+    return `<div class="fm-sheet__head"><span class="m-title">${t('Проигрыватель')}</span></div>
+      <div class="fm-sheet__body m-pad">
+        <div class="m-times m-cap m-num"><span id="plAtFull">${fmtTotal(Math.round(at))}</span>
+          <span id="plLeft">−${fmtTotal(Math.max(0, Math.round(f.sec - at)))}</span></div>
+        <div class="m-ctrls" style="justify-content:center">
+          ${seek(-1)}
+          <button class="m-play" data-playtoggle="1" aria-label="${t('Воспроизвести')}">
+            ${M.playing ? ic(I.pause, 'fm-i--l') : `<svg class="fm-i fm-i--l" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8.5 5.2l11 6.8-11 6.8z"/></svg>`}
+          </button>
+          ${seek(1)}
+        </div>
+        <p class="m-cap m-dim" style="margin:var(--size-5x) 0 var(--space-m)">${t('Скорость')}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-m)">${SPEEDS.map(v =>
+          `<button class="m-speed ${v === M.speed ? 'is-on' : ''}" data-speed="${v}">${fmtSpeed(v)}</button>`).join('')}</div>
+      </div>`;
+  },
+  /* Источник записи — это НЕ только микрофоны: диктофон стоит в том же
+     выборе, под своим именем. Иначе устройство направления в приложении
+     невидимо, а спрашивают именно про него. Диктофон не на связи выбрать
+     можно, но приложение сразу говорит, чем оно тогда пишет. */
+  mic: () => sheet(t('Источник записи'),
+    ['Автоматически', 'Гарнитура', 'Микрофон телефона']
+      .map(x => item(I.mic, x, `data-mic="${esc(x)}"`, M.micSrc === x))
+      .concat(DEVICES.map(d => item(I.device,
+        d.name + (d.link === 'off' ? ' · ' + t('не на связи') : ''),
+        `data-mic="${esc(d.name)}"`, M.micSrc === d.name)))),
+  /* Все подсказки встречи: на экране записи видна последняя, остальные —
+     здесь. Каждая с источником: подсказке без источника верить нельзя. */
+  hints: () => {
+    const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
+    const list = M.rec.hints.slice().reverse();
+    return `<div class="fm-sheet__head"><span class="m-title">${t('Подсказки')} · ${t(prof.name)}</span></div>
+      <div class="fm-sheet__body">
+        <p class="m-pad m-cap m-dim" style="margin:0 0 var(--size-4x)">${t('Профиль задаёт')} ${t(prof.owner)}. ${t(prof.what)}.</p>
+        ${list.length ? list.map(h => `<div class="m-pad" style="margin-bottom:var(--size-4x)">
+            <div class="m-hint__head"><span class="fm-tag fm-tag--cyan">${t(h.kind)}</span></div>
+            <h3 class="m-hint__t m-head">${t(h.title)}</h3>
+            <p class="m-hint__b m-sub">${t(h.body)}</p>
+            ${h.note ? `<p class="m-hint__b m-cap m-dim" style="margin-top:var(--space-xs)">${t(h.note)}</p>` : ''}
+            <p class="m-hint__src m-cap">${ic(I.book, 'fm-i--s')} ${t(h.src)}</p>
+          </div>`).join('')
+        : `<p class="m-pad m-sub m-dim">${t('За эту встречу подсказок ещё не было.')}</p>`}
+      </div>
+      <div class="fm-sheet__foot">
+        <button class="fm-btn fm-btn--block" data-closesheet="1">${t('Закрыть')}</button>
+      </div>`;
+  },
+  /* Подтверждение необратимого действия. На телефоне это шторка, а не окно:
+     модальные окна здесь чужие. */
+  confirm: () => {
+    const c = M.confirm || {};
+    return `<div class="fm-sheet__head"><span class="m-title">${t(c.title || 'Подтвердите')}</span></div>
+      <div class="fm-sheet__body m-pad">
+        <p class="m-sub" style="margin:0">${t(c.body || '')}</p>
+      </div>
+      <div class="fm-sheet__foot">
+        <button class="fm-btn" data-closesheet="1">${t(c.no || 'Отмена')}</button>
+        <button class="fm-btn fm-btn--danger" data-confirmyes="1">${t(c.yes || 'Да')}</button>
+      </div>`;
+  },
+  askscope: () => sheet(t('Где искать'), [item(I.folder, 'По всем записям', 'data-askfolder=""', !M.ask.folder)]
+    .concat(FOLDERS.map(f => item(I.folder, f.name, `data-askfolder="${esc(f.name)}"`, M.ask.folder === f.name)))),
+  addtpl: () => sheet(t('Шаблон разбора'), TEMPLATES.map(tpl => item(I.tpl, tpl.t, `data-addtpl="${esc(tpl.t)}"`))),
+  row: () => {
+    const f = FILES.find(x => x.id === M.sheetId);
+    if (!f) return sheet('', []);
+    return sheet(esc(f.title), f.deleted
+      ? [item(I.folder, 'Восстановить', `data-restore="${f.id}"`), item(I.trash, 'Удалить навсегда', `data-purge="${f.id}"`, false, true)]
+      : [...(M.screen === 'note' && M.tab !== 'transcript' && M.tab !== 'marks'
+             ? [item(I.ai, 'Сформировать заново', 'data-regen="1"'),
+                ...(M.tab !== 'summary' ? [item(I.trash, 'Удалить разбор', 'data-deltab="1"')] : [])]
+             : []),
+         item(I.pencil, 'Переименовать', `data-rename="${f.id}"`),
+         item(I.folder, 'Переместить в папку', `data-movesheet="${f.id}"`),
+         item(I.share, 'Поделиться', 'data-share="1"'),
+         item(I.export, 'Выгрузить расшифровку (.txt)', `data-export="transcript"`),
+         item(I.book, 'Выгрузить конспект (.txt)', `data-export="summary"`),
+         item(I.trash, 'В корзину', `data-todelete="${f.id}"`, false, true)]);
+  },
+  move: () => sheet(t('Переместить в папку'),
+    FOLDERS.map(f => item(I.folder, f.name, `data-moveto="${esc(f.name)}" data-mid="${M.sheetId}"`))
+      .concat([item(I.unfiled, 'Без папки', `data-moveto="" data-mid="${M.sheetId}"`),
+               item(I.plus, 'Новая папка', `data-sheet="newfolder" data-formid="${M.sheetId}"`)])),
+  tpl: () => {
+    const tpl = TEMPLATES.find(x => x.t === M.sheetId) || TEMPLATES[0];
+    return `<div class="fm-sheet__head"><span class="m-title">${esc(tpl.t)}</span></div>
+      <div class="fm-sheet__body m-pad">
+        <p class="m-cap m-dim" style="margin:0 0 var(--size-3x)">${t(tpl.cat)} · ${t(tpl.author)}</p>
+        <p class="m-body" style="margin:0 0 var(--size-3x)">${esc(tpl.s)}</p>
+        <p class="m-cap m-dim" style="margin:0 0 var(--size-4x)">${t('Применений')}: ${num(tpl.uses, 0)}</p>
+        <div class="m-row m-row--inset" style="cursor:default">
+          <span class="m-row__body m-body">${t('Разбирать этим шаблоном новые записи')}</span>
+          <span class="m-row__right"><button class="m-toggle ${M.tplDefault === tpl.t ? 'is-on' : ''}"
+            data-tpldefault="${esc(tpl.t)}" aria-label="${t('Разбирать этим шаблоном новые записи')}"></button></span>
+        </div>
+      </div>
+      <div class="fm-sheet__foot">
+        <button class="fm-btn" data-closesheet="1">${t('Закрыть')}</button>
+        <button class="fm-btn fm-btn--primary" data-addtpl="${esc(tpl.t)}">${t('Применить к записи')}</button>
+      </div>`;
+  },
+  /* Новая папка: название и цвет из палитры канона. Перенос из настольного —
+     без создания папок вся модель разделов мертва, а разделы теперь главный
+     экран. */
+  newfolder: () => `<div class="fm-sheet__head"><span class="m-title">${t('Новая папка')}</span></div>
+    <div class="fm-sheet__body m-pad">
+      <input class="fm-input" id="folderName" placeholder="${t('Например «Ключевые клиенты»')}">
+      <p class="m-cap m-dim" style="margin:var(--size-4x) 0 var(--space-m)">${t('Цвет')}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:var(--size-3x)">${SWATCH.map((c, i) => `
+        <button class="m-swatch ${i === M.newFolderColor ? 'is-on' : ''}" data-swatch="${i}"
+          style="background:${c}" aria-label="${t('Цвет')} ${i + 1}"></button>`).join('')}</div>
+    </div>
+    <div class="fm-sheet__foot">
+      <button class="fm-btn" data-closesheet="1">${t('Отмена')}</button>
+      <button class="fm-btn fm-btn--primary" id="folderSave" disabled>${t('Создать')}</button>
+    </div>`,
+  newtpl: () => `<div class="fm-sheet__head"><span class="m-title">${t('Новый шаблон разбора')}</span></div>
+    <div class="fm-sheet__body m-pad">
+      <input class="fm-input" id="tplName" placeholder="${t('Например «Итоги встречи с заказчиком»')}">
+      <div style="height:var(--size-3x)"></div>
+      <textarea class="fm-textarea" id="tplWhat" placeholder="${t('Опишите словами: что должно попасть в разбор и в каком порядке')}"></textarea>
+    </div>
+    <div class="fm-sheet__foot">
+      <button class="fm-btn" data-closesheet="1">${t('Отмена')}</button>
+      <button class="fm-btn fm-btn--primary" id="tplSave" disabled>${t('Создать')}</button>
+    </div>`,
+  /* Карточка участника: сколько реплик в этой записи, где встречается ещё,
+     переход в любую из тех записей. Числа считаются из записей, в разметке их
+     нет. */
+  person: () => {
+    const name = String(M.sheetId || '');
+    const cur = file();
+    const inCur = segsOf(cur).filter(x => x.who === name).length;
+    const others = alive().filter(f => f.id !== cur.id && (f.transcript || []).some(x => x.who === name));
+    return `<div class="fm-sheet__head"><span class="m-title m-data">${esc(name)}</span></div>
+      <div class="fm-sheet__body">
+        <p class="m-pad m-sub m-dim" style="margin:0 0 var(--size-4x)">${t('участник разговора')}</p>
+        <div class="m-group">
+          ${[[t('Реплик в этой записи'), inCur],
+             [t('Ещё записей с ним'), others.length]].map(([label, v]) => `
+            <div class="m-row m-row--inset" style="cursor:default">
+              <span class="m-row__body m-body">${label}</span>
+              <span class="m-row__val m-head m-num">${v}</span></div>`).join('')}
+        </div>
+        ${others.length ? `<div class="m-grouphead m-cap">${t('Где встречается')}</div>
+          <div class="m-group">${others.slice(0, 6).map(f => `
+            <div class="m-row m-row--inset" data-file="${f.id}">
+              <span class="m-row__body">
+                <span class="m-row__title m-body">${esc(f.title)}</span>
+                <span class="m-row__meta m-cap"><span class="m-num">${esc(fmtShort(f.ts))}</span></span>
+              </span>${ic(I.go, 'fm-i--s m-row__chev')}
+            </div>`).join('')}</div>` : ''}
+      </div>`;
+  },
+  share: () => {
+    const f = file();
+    return `<div class="fm-sheet__head"><span class="m-title">${t('Поделиться записью')}</span></div>
+      <div class="fm-sheet__body m-pad">
+        <p class="m-sub m-dim" style="margin:0 0 var(--size-4x)">${t('Ссылку откроют только сотрудники организации, у которых есть доступ к пространству. Наружу запись не уходит.')}</p>
+        <input class="fm-input" id="shareLink" readonly value="flowmeet.local/r/${f.id}">
+      </div>
+      <div class="fm-sheet__foot">
+        <button class="fm-btn" data-closesheet="1">${t('Закрыть')}</button>
+        <button class="fm-btn fm-btn--primary" id="shareCopy">${t('Скопировать ссылку')}</button>
+      </div>`;
+  }
+};
+function sheet(title, items) {
+  return `<div class="fm-sheet__head"><span class="m-title">${title}</span></div>
+    <div class="fm-sheet__body">${items.join('')}</div>`;
+}
+function item(icon, label, attrs, on, danger) {
+  return `<button class="fm-sheet__item ${danger ? 'is-danger' : ''}" ${attrs || ''}>
+    ${ic(icon)}<span>${label}</span>${on ? ic(I.check, 'fm-i--s fm-check') : ''}</button>`;
+}
+/* Шторки, которые нельзя перерисовывать на ходу: в них набирают текст. */
+const KEEP_SHEET = ['newfolder', 'newtpl', 'confirm'];
+function openSheet(kind, id) {
+  M.sheet = kind; M.sheetId = id || null;
+  $('#sheet').innerHTML = (SHEETS[kind] || (() => ''))();
+  $('#scrim').classList.add('is-open');
+}
+function closeSheet() { M.sheet = null; $('#scrim').classList.remove('is-open'); }
+
+/* ============================== ЗАПИСЬ ВСТРЕЧИ ============================ */
+let recTimer = null;
+/* Реплики, которые «слышит» прототип. Берутся из настоящей демонстрационной
+   записи и ровно они же остаются в сохранённой записи — показанное на экране и
+   сохранённое совпадают, вместо экрана расшифровки одно, а в записи другое. */
+function recTick(on) {
+  clearInterval(recTimer); recTimer = null;
+  if (on) recTimer = setInterval(() => {
+    if (!M.rec.on || M.rec.paused) return;
+    M.rec.sec++;
+    const src = REC_SRC();
+    /* Живая расшифровка: слова появляются по ходу речи. Этим приложение
+       доказывает, что слышит именно речь, ещё до первой остановки. */
+    const want = recLinesAt(M.rec.sec);
+    if (want > M.rec.lines.length) {
+      const s = src[M.rec.lines.length];
+      M.rec.lines.push({ who: s.who, role: s.role, text: s.text, at: M.rec.sec });
+      /* Подсказка идёт СЛЕДОМ за репликой, на которую отвечает. Правило одно на
+         два прототипа и живёт в общей части (`hintsAfter`). */
+      if (LINK.live) M.rec.hints = hintsAfter(ORG.hintProfile, M.rec.lines.length);
+      render(); return;                               // строка пришла — перерисовываем целиком
+    }
+    if ($('#recTime')) $('#recTime').textContent = fmtTotal(M.rec.sec);
+  }, 1000);
+}
+/* auto — чем вызвана запись: пусто у ручного старта, иначе причина (звонок на
+   Android, напоминание о встрече). Место кончилось — запись не начинается, и
+   отказ называет причину. */
+function recStart(auto) {
+  if (diskBlocked()) { toast(diskWhy()); return; }
+  M.rec = { on: true, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: auto || null, hints: [] };
+  recTick(true); render();
+}
+/* Отмена — единственное необратимое действие: остановка сохраняет запись,
+   отмена её удаляет. Поэтому только через подтверждение. */
+function recCancel(falseAlarm) {
+  M.rec = { on: false, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: null, hints: [] };
+  recTick(false); render();
+  toast(falseAlarm ? 'Ложная тревога: запись удалена, на сервер не ушла'
+                   : 'Запись отменена — файл удалён, на сервер не ушёл');
+}
+function recStop() {
+  const sec = Math.max(1, M.rec.sec), d = new Date();
+  const seg = M.rec.lines.map(l => T(fmtTotal(Math.max(0, l.at - REC_STEP)), l.who, l.role, l.text));
+  const n = {
+    id: 'r' + d.getTime().toString(36), title: t('Запись от') + ' ' + fmtDate(d.getTime()),
+    ts: d.getTime(), sec, at: 0, folder: null, src: 'Телефон', custom: [],
+    /* Что показали живой расшифровкой, то и сохранили; конспект ещё предстоит
+       сформировать — это отдельный шаг на вкладке «Конспект». */
+    transcript: seg, transcriptEmpty: seg.length ? undefined : true, summaryEmpty: true
+  };
+  FILES.unshift(n);
+  if (M.rec.marks.length) M.marks[n.id] = M.rec.marks.slice();
+  applyLang();
+  /* Связи нет — запись встаёт в очередь отправки, а не теряется. */
+  if (!LINK.live) QUEUE.push({ id: 'q' + n.id, title: n.title, sec, state: 'wait' });
+  M.rec = { on: false, paused: false, sec: 0, saved: n.id, lines: [], marks: [], auto: null, hints: [] };
+  recTick(false); render();
+}
+function recOverlay() {
+  /* Задержки не по кругу из семи, иначе полоски складываются в три
+     одинаковых пучка и видно, что это узор, а не звук. */
+  const bars = Array.from({ length: 42 }, (_, i) => `<span style="animation-delay:${(i * 37) % 880}ms"></span>`).join('');
+  if (M.rec.on) {
+    const lines = M.rec.lines;
+    const cur = lines.length - 1;
+    const mand = isMandatory();
+    const last = M.rec.hints[M.rec.hints.length - 1];
+    const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
+    return `
+    <div class="m-rec">
+      <!-- Отмена стоит отдельно от остановки: остановка сохраняет запись,
+           отмена её удаляет. Единственное необратимое действие экрана. -->
+      <button class="m-rec__x" data-reccancel="1" aria-label="${t('Отменить запись')}">${ic(I.close, 'fm-i--l')}</button>
+      <div class="m-rec__top">
+        <div class="m-rec__head m-sub"><span class="m-rec__dot"></span>${M.rec.paused ? t('Запись на паузе') : t('Идёт запись встречи')}</div>
+        <div class="m-rec__time m-num" id="recTime">${fmtTotal(M.rec.sec)}</div>
+        ${M.rec.auto ? `<p class="m-rec__note m-cap" style="margin:0">${
+          /* На Android приложение начинает запись само, на iPhone — нет: включить
+             микрофон, пока приложение не открыто, система не даёт, поэтому там
+             запись начинают одним нажатием по напоминанию. Это единственное
+             честное отличие рамок, проверенное по документации Apple, и «началась
+             сама» его стирало (правка 28.08.2026). Фраза собирается целиком на
+             каждой рамке: у неё разный порядок слов, подстановкой такое не
+             покрыть. */
+          OS === 'android' ? t('Запись началась сама:') + ' ' + t(M.rec.auto)
+                           : t('Запись начали одним нажатием по напоминанию о встрече')
+        }</p>` : ''}
+      </div>
+      ${mand ? `<div class="m-warn m-cap">${ic(I.lock, 'fm-i--s')}
+        <span>${t('Режим организации: запись обязательна. Пауза и отмена выключены.')}</span></div>` : ''}
+      <!-- ГЛАВНОЕ ОТЛИЧИЕ ПРОДУКТА: подсказка приходит во время разговора.
+           Показана последняя, остальные — по нажатию, шторкой. -->
+      <div class="m-hintbox">
+        ${last
+          ? `<button class="m-hint" data-sheet="hints">
+              <div class="m-hint__head">
+                <span class="fm-tag fm-tag--cyan">${t(last.kind)}</span>
+                <span class="m-tiny m-dim" style="margin-left:auto">${t(prof.name)} · ${M.rec.hints.length}</span>
+              </div>
+              <h3 class="m-hint__t m-head">${t(last.title)}</h3>
+              <p class="m-hint__b m-sub">${t(last.body)}</p>
+              ${last.note ? `<p class="m-hint__b m-cap m-dim" style="margin-top:var(--space-xs)">${t(last.note)}</p>` : ''}
+              <p class="m-hint__src m-cap">${ic(I.book, 'fm-i--s')} ${t(last.src)}</p>
+            </button>`
+          : `<div class="m-hint__wait m-cap">${ic(LINK.live ? I.bulb : I.alert, 'fm-i--s')}
+              <span>${t(LINK.live
+                ? 'Слушаем разговор — подсказка придёт, когда будет чем помочь'
+                : 'Связи с сервером нет: запись доедет, подсказки опоздают')}</span></div>`}
+      </div>
+      <div class="m-rec__live" id="recLive">
+        ${lines.length ? lines.map((l, i) => `<p class="m-rec__line m-body">
+            <b>${esc(l.who)}</b>${M.rec.marks.includes(i) ? ' ' + ic(I.mark, 'fm-i--s') : ''}<br>${esc(l.text)}</p>`).join('')
+          : `<div class="m-rec__wait m-sub">${ic(I.spin, 'fm-i--s')} ${t('Слушаем — текст появится, как только начнут говорить')}</div>`}
+      </div>
+      <div class="m-rec__bottom">
+        <div class="m-level" style="${M.rec.paused ? 'opacity:.25' : ''}">${bars}</div>
+        <p class="m-rec__note m-cap" style="margin:0">${t('Сохраним в «Без папки», источник — телефон')}</p>
+        <div class="m-rec__acts">
+          <button class="m-rec__side" data-recmark="1" ${cur < 0 ? 'disabled' : ''}
+            aria-label="${t('Отметить это место')}">${ic(I.mark, 'fm-i--l')}<span>${t('Отметить')}</span></button>
+          <button class="m-rec__stop" data-recstop="1" aria-label="${t('Остановить')}">${ic(I.stop, 'fm-i--l')}</button>
+          <button class="m-rec__side" data-recpause="1">
+            ${ic(mand ? I.lock : (M.rec.paused ? I.mic : I.pause), 'fm-i--l')}<span>${M.rec.paused ? t('Продолжить') : t('Пауза')}</span></button>
+        </div>
+        <p class="m-rec__note m-cap" style="margin:0">${t('Экран можно погасить — запись не прервётся')}</p>
+      </div>
+    </div>`;
+  }
+  if (M.rec.saved) {
+    const f = FILES.find(x => x.id === M.rec.saved);
+    /* Возврат к списку записей стрелкой сверху (решение владельца 28.08.2026).
+       Без него экран был тупиком: выйти можно было только внутрь записи или
+       начав новую. Манера возврата — та же, что в панели обычного экрана:
+       шеврон в iOS, стрелка в Material. */
+    return `<div class="m-rec">
+      <div class="m-nav">
+        <button class="fm-btn fm-btn--icon" data-recdone="1" aria-label="${t('К записям')}">${
+          ic(OS === 'android' ? I.back : I.backIos, 'fm-i--l')}</button>
+      </div>
+      <div class="m-rec__done">
+        <div class="m-rec__head m-sub">${ic(I.check, 'fm-i--s')} ${t('Запись сохранена')}</div>
+        <div class="m-rec__time m-num">${f ? f.total : '—'}</div>
+        <p class="m-rec__note m-cap" style="margin:0">${t('Расшифровка уже есть, конспект соберём по кнопке')}</p>
+        <p class="m-rec__note m-cap" style="margin:0">${t(LINK.live
+          ? 'Запись уходит на сервер организации.'
+          : 'Связи нет — запись встала в очередь отправки и уйдёт сама.')}</p>
+        <div>
+          <button class="fm-btn fm-btn--primary" data-file="${M.rec.saved}">${t('Открыть запись')}</button>
+          <div style="height:var(--size-3x)"></div>
+          <button class="fm-btn" data-recnew="1">${t('Записать ещё')}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+/* ============================== ОТРИСОВКА ================================= */
+const TABS = [
+  ['folders', 'Записи', I.files],
+  ['ask', 'Спросить', I.ai],
+  ['templates', 'Шаблоны', I.tpl],
+  ['more', 'Ещё', I.more]
+];
+/* Какие экраны лежат внутри какого раздела: подсветка раздела не должна гаснуть
+   при уходе на вложенный экран. */
+const TAB_OF = { folders: 'folders', files: 'folders', note: 'folders', search: 'folders',
+                 ask: 'ask', templates: 'templates', more: 'more', set: 'more', membership: 'more',
+                 devices: 'more', outbox: 'more' };
+const SCREENS = { folders: screenFolders, files: screenFiles, note: screenNote, search: screenSearch,
+                  ask: screenAsk, templates: screenTemplates, more: screenMore, set: screenSet,
+                  membership: screenMembership, devices: screenDevices, outbox: screenOutbox };
+/* Кнопка записи живёт там, где действие уместно — на папках и в списке записей;
+   на чужих разделах её нет, иначе она читается как «записать шаблон». */
+const FAB_ON = ['folders', 'files'];
+function render() {
+  const fab = FAB_ON.includes(M.screen)
+    ? `<button class="m-fab" data-recnow="1" aria-label="${t('Записать встречу')}">${ic(I.mic, 'fm-i--l')}</button>` : '';
+  $('#app').innerHTML = (SCREENS[M.screen] || screenFolders)() + fab + recOverlay();
+  /* Панель разделов видна на КАЖДОМ экране: по HIG её скрытие лишает человека
+     ответа «в каком я разделе». Единственное исключение — модальный экран
+     записи встречи, он закрывает всё сам. Проигрыватель открытой записи стоит
+     аксессуаром НАД панелью, а не вместо неё. */
+  const acc = $('#acc');
+  acc.hidden = M.screen !== 'note';
+  acc.innerHTML = M.screen === 'note' ? miniPlayer(file()) : '';
+  $('#tabbar').innerHTML = TABS.map(([k, label, icon]) =>
+    `<button class="${TAB_OF[M.screen] === k ? 'is-on' : ''}"
+        data-go="${k}">${ic(icon, 'fm-i--tab')}<span>${label}</span></button>`).join('');
+  const clock = new Date();
+  $('#clock').textContent = clock.getHours() + ':' + p2(clock.getMinutes());
+  ['#q', '#findQ'].forEach(sel => {
+    const el = $(sel);
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+  });
+  /* Открытая шторка тоже рисуется из состояния, поэтому обновляется вместе с
+     экраном: иначе пришедшая подсказка в ней не появлялась, а список устаревал
+     молча. Шторки с полем ввода не трогаем — перерисовка стёрла бы набранное. */
+  if (M.sheet && !KEEP_SHEET.includes(M.sheet)) {
+    $('#sheet').innerHTML = (SHEETS[M.sheet] || (() => ''))();
+  }
+  /* Живая расшифровка идёт за речью: последняя реплика всегда на виду. */
+  const live = $('#recLive'); if (live) live.scrollTop = live.scrollHeight;
+  /* Открыли запись — сразу показываем место, на котором остановились: иначе
+     звучащая реплика подсвечена где-то за экраном. Прокручиваем ОДИН раз на
+     запись и вкладку, а не при каждой перерисовке, иначе текст не полистать. */
+  const nowSeg = $('.m-seg-row.is-now'), key = M.screen + ':' + M.fileId + ':' + M.tab;
+  if (nowSeg && M.seenKey !== key) scrollWithin(nowSeg, true);
+  M.seenKey = key;
+  /* Крупный заголовок уезжает вместе с содержимым, в панели проступает
+     компактный — так делают системные приложения телефона. */
+  const sc = $('#scroll');
+  if (sc) sc.addEventListener('scroll', () => {
+    const n = $('#nav');
+    if (n) n.classList.toggle('is-scrolled', sc.scrollTop > 12);
+  });
+  paintPlayer();
+  /* Плашка прототипа тоже рисуется из состояния: сменили режим организации —
+     подсветка переключателя обязана сойтись с тем, что показывает экран. */
+  paintPlaque();
+}
+
+/* ================================ СОБЫТИЯ ================================= */
+function goScreen(k) { stopPlay(); M.screen = k; render(); }
+/* Куда ведёт возврат — один владелец на кнопку в панели и на жест от края. */
+const UP = { set: 'more', membership: 'more', note: 'files', files: 'folders', search: 'folders',
+             devices: 'more', outbox: 'more' };
+function goBack() {
+  /* Из записи возвращаемся туда, откуда её открыли, и только если этого не
+     известно — по карте вверх. Карта одна на кнопку в панели и на жест от края,
+     второго владельца возврата не заводим. */
+  if (M.screen === 'note' && M.came) {
+    const c = M.came;
+    M.came = null;
+    M.screen = c.screen; M.scope = c.scope; M.q = c.q; M.ask = c.ask;
+    stopPlay(); render();
+    return true;
+  }
+  const up = UP[M.screen];
+  if (!up) return false;                 // корневой экран раздела — возвращаться некуда
+  M.came = null;
+  M.screen = up; stopPlay(); render();
+  return true;
+}
+/* Жест возврата от левого края. У Apple это жест ПРИЛОЖЕНИЯ и работает на
+   вложенном экране; у Google жест СИСТЕМНЫЙ — он есть всегда, поэтому в
+   Android-оболочке внизу корпуса стоит полоска системного жеста. */
+let edge = null;
+document.addEventListener('pointerdown', e => {
+  const box = $('#phone').getBoundingClientRect();
+  if (e.clientX - box.left > 26 || M.sheet) return;
+  edge = { x: e.clientX, y: e.clientY };
+});
+document.addEventListener('pointerup', e => {
+  if (!edge) return;
+  const dx = e.clientX - edge.x, dy = Math.abs(e.clientY - edge.y);
+  edge = null;
+  if (dx > 60 && dy < 50) goBack();
+});
+/* Открытие записи. Пришли из поиска по слову — открываем на расшифровке в том
+   месте, где слово прозвучало, и держим слово подсвеченным: иначе после поиска
+   его пришлось бы искать заново уже внутри записи. */
+function openFile(id, at, q) {
+  const f = FILES.find(x => x.id === id);
+  if (!f) return;
+  stopPlay();
+  /* Откуда пришли — чтобы «назад» вернуло ТУДА ЖЕ (правка 28.08.2026 по
+     замечанию владельца). Возврат из записи вёл по жёсткой карте — всегда в
+     список записей, — поэтому человек, открывший запись из поиска или из
+     «Спросить», возвращался не к своим результатам, а в общий список: запрос и
+     найденное пропадали, и путь приходилось повторять. Запоминаем один уровень:
+     глубже записи в прототипе не уходят. */
+  if (M.screen !== 'note') M.came = { screen: M.screen, scope: { ...M.scope }, q: M.q, ask: { ...M.ask } };
+  M.fileId = id; M.screen = 'note';
+  const seeked = at !== undefined && at !== null && at !== '';
+  if (seeked) f.at = Math.max(0, Math.min(f.sec, +at));
+  M.find = q || ''; M.findOpen = !!q;
+  M.tab = seeked || q ? 'transcript'
+    : hasSummary(f) ? 'summary' : 'transcript';
+  M.rec.saved = null;
+  render();
+}
+const targets = v => [v === 'cur' ? M.fileId : v];
+
+/* Подтверждение необратимого действия — шторкой снизу: модальные окна на
+   телефоне чужие, а решение всё равно требует ответа. */
+function askConfirm(text, act) {
+  M.confirm = { ...text, act };
+  openSheet('confirm');
+}
+/* Забрать записи с диктофона по-настоящему: запись уходит с устройства и
+   появляется в списке с источником «Диктофон». */
+function devTake(ids) {
+  const taken = [];
+  ids.forEach(id => {
+    const i = DEV_RECS.findIndex(r => r.id === id);
+    if (i < 0) return;
+    const r = DEV_RECS[i], d = devById(r.dev);
+    if (!d || d.link === 'off') return;
+    DEV_RECS.splice(i, 1);
+    FILES.unshift({
+      id: 'dv' + r.id, title: r.title, ts: r.ts, sec: r.sec, at: 0,
+      folder: null, src: 'Диктофон', custom: [],
+      transcript: [], transcriptEmpty: true, summaryEmpty: true
+    });
+    taken.push(r);
+  });
+  if (!taken.length) { toast('Диктофон не на связи — записи заберём, когда он ответит'); return; }
+  applyLang();
+  if (!LINK.live) taken.forEach(r => QUEUE.push({ id: 'q' + r.id, title: r.title, sec: r.sec, state: 'wait' }));
+  render();
+  toast(phraseTaken(taken.length), true);
+}
+
+/* Выгрузка отдаёт настоящий файл, собранный из содержимого записи. */
+function download(name, text, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: (type || 'text/plain') + ';charset=utf-8' }));
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const asText = f => f.title + '\n' + f.date + ' · ' + f.dur + '\n\n'
+  + (f.transcript || []).map(x => x.time + '  ' + x.who + ': ' + x.text).join('\n');
+const asSummary = f => f.title + '\n' + f.date + '\n\n'
+  + plain(String(f.summary || '').replace(/<\/(p|li|h1|h2|ul|ol)>/g, '\n'))
+      .replace(/[ \t]+/g, ' ').replace(/\n\s+/g, '\n').trim();
+const safeName = x => x.replace(/[\\/:*?"<>|]/g, '-').slice(0, 60);
+
+document.addEventListener('click', e => {
+  /* Полосу только что протащили мышью — это была прокрутка, а не нажатие на
+     чипс, оказавшийся под курсором. */
+  if (stripDragged) { stripDragged = false; return; }
+  const hit = s => e.target.closest(s);
+
+  /* --- шторка --- */
+  if (hit('[data-closesheet]')) { closeSheet(); return; }
+  if (hit('#scrim') && !hit('.fm-sheet')) { closeSheet(); return; }
+
+  /* --- язык и тема (плашка над телефоном и раздел настроек) --- */
+  const sl = hit('[data-setlang]');
+  if (sl) {
+    setLang(sl.dataset.setlang);
+    paintPlaque(); render();
+    if (M.sheet) openSheet(M.sheet, M.sheetId);
+    return;
+  }
+  const so = hit('[data-setos]');
+  if (so) { setOs(so.dataset.setos); render(); return; }
+  if (hit('[data-theme-toggle]')) {
+    const cur = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    return;
+  }
+
+  /* --- навигация --- */
+  if (hit('[data-back]')) { goBack(); return; }
+  const go = hit('[data-go]');
+  if (go) {
+    if (go.dataset.go === 'search') { M.screen = 'search'; render(); return; }
+    goScreen(go.dataset.go); return;
+  }
+  const sc = hit('[data-scope]');
+  if (sc) {
+    M.scope = { kind: sc.dataset.scope, value: sc.dataset.value || null };
+    M.screen = 'files'; M.sort = 'date'; render(); return;
+  }
+  const st = hit('[data-set]');
+  if (st) { M.setPane = st.dataset.set; M.screen = 'set'; render(); return; }
+
+  /* --- запись встречи --- */
+  if (hit('[data-recnow]')) { recStart(); return; }
+  /* Режим «запись обязательна» не гасит кнопку молча: она нажимается и
+     называет причину. Остановка при этом разрешена — запись сохраняется. */
+  if (hit('[data-recpause]')) {
+    if (isMandatory()) { toast(MANDATORY_WHY); return; }
+    M.rec.paused = !M.rec.paused; render(); return;
+  }
+  if (hit('[data-recstop]')) { recStop(); return; }
+  if (hit('[data-recnew]')) { recStart(); return; }
+  /* Стрелка на экране сохранённой записи: закрываем слой и показываем список,
+     где новая запись стоит первой. */
+  if (hit('[data-recdone]')) {
+    M.rec = { on: false, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: null, hints: [] };
+    recTick(false); goScreen('files'); return;
+  }
+  if (hit('[data-reccancel]')) {
+    if (isMandatory()) { toast(MANDATORY_WHY); return; }
+    askConfirm({ title: 'Отменить запись?',
+      body: 'Запись будет удалена и на сервер не уйдёт. Восстановить её будет нечем — в отличие от остановки, которая запись сохраняет.',
+      yes: 'Отменить запись', no: 'Не отменять' }, () => recCancel(false));
+    return;
+  }
+  if (hit('[data-falsealarm]')) { recCancel(true); return; }
+  if (hit('[data-confirmyes]')) {
+    const act = M.confirm && M.confirm.act;
+    M.confirm = null; closeSheet();
+    if (typeof act === 'function') act();
+    return;
+  }
+
+  /* --- диктофоны --- */
+  const dg = hit('[data-devget]');
+  if (dg) { devTake([dg.dataset.devget]); return; }
+  const da = hit('[data-devall]');
+  if (da) {
+    const d = devById(da.dataset.devall);
+    if (!d || d.link === 'off') { toast('Диктофон не на связи — включите его и держите рядом'); return; }
+    const ids = devRecs(d.id).map(r => r.id);
+    if (!ids.length) { toast('Новых записей на диктофоне нет', true); return; }
+    devTake(ids); return;
+  }
+  const dl = hit('[data-devlisten]');
+  if (dl) {
+    const d = devById(dl.dataset.devlisten);
+    if (!d || d.link === 'off') { toast('Диктофон не на связи — живой звук недоступен'); return; }
+    M.listen = M.listen === d.id ? null : d.id;
+    render(); toast(M.listen ? t('Слушаем живой звук с') + ' ' + d.name : 'Прослушивание остановлено', true); return;
+  }
+  const dr = hit('[data-devrec]');
+  if (dr) {
+    const d = devById(dr.dataset.devrec);
+    if (!d || d.link === 'off') { toast('Диктофон не на связи — командовать записью нечем'); return; }
+    DEV_RECS.push({ id: 'dv' + Date.now().toString(36), dev: d.id,
+      title: t('Запись с') + ' ' + d.name, sec: 60, ts: Date.now() });
+    render(); toast('Запись на диктофоне начата', true); return;
+  }
+  const dc = hit('[data-devclock]');
+  if (dc) {
+    const d = devById(dc.dataset.devclock);
+    if (!d) return;
+    if (d.link === 'off') { toast('Диктофон не на связи — часы сверим, когда он ответит'); return; }
+    d.clockOk = true; render(); toast('Часы диктофона сверены с телефоном', true); return;
+  }
+  if (hit('[data-devscan]')) { toast('Ищем диктофоны рядом: включите устройство и держите его в метре от телефона'); return; }
+
+  /* --- очередь отправки --- */
+  if (hit('[data-qsend]')) {
+    if (!QUEUE.length) { toast('Очередь пуста — отправлять нечего'); return; }
+    if (!LINK.live) { toast('Связи с сервером нет — отправим сами, как только она появится'); return; }
+    const n = QUEUE.length; QUEUE.length = 0;
+    render(); toast(phraseSent(n), true); return;
+  }
+  const qo = hit('[data-qone]');
+  if (qo) {
+    if (!LINK.live) { toast('Связи с сервером нет — отправим сами, как только она появится'); return; }
+    const i = QUEUE.findIndex(q => q.id === qo.dataset.qone);
+    if (i > -1) QUEUE.splice(i, 1);
+    render(); toast('Запись отправлена на сервер', true); return;
+  }
+
+  /* --- режим организации, профиль подсказок, отзыв устройства --- */
+  const om = hit('[data-orgmode]');
+  if (om) {
+    ORG.mode = om.dataset.orgmode; render();
+    toast(isMandatory()
+      ? 'Режим «запись обязательна» применён сразу — перезапуск не нужен'
+      : 'Режим «помощник» применён сразу — перезапуск не нужен');
+    return;
+  }
+  const hp = hit('[data-hintprof]');
+  if (hp) {
+    ORG.hintProfile = hp.dataset.hintprof; render();
+    toast(t('Профиль подсказок:') + ' ' + t(hintProfileName(ORG.hintProfile)), true); return;
+  }
+  const ot = hit('[data-orgtoggle]');
+  if (ot) {
+    const k = ot.dataset.orgtoggle;
+    ORG[k] = !ORG[k]; render();
+    if (k === 'privateCalls') toast(ORG.privateCalls ? PRIVATE_WHY : 'Приватные звонки запрещены сервером: записывается любой разговор');
+    else toast(ORG.diarization ? 'Разделение голосов включено' : 'Разделение голосов выключено: говорящий будет один');
+    return;
+  }
+  const rv = hit('[data-revoke]');
+  if (rv) {
+    const ss = SESSIONS.find(x => x.id === rv.dataset.revoke);
+    if (!ss) return;
+    askConfirm({ title: 'Отозвать доступ?',
+      body: t('Устройство') + ' «' + ss.name + '» ' + t('потеряет доступ со следующего запроса. Вернуть доступ может только администратор организации.'),
+      yes: 'Отозвать', no: 'Не отзывать' },
+      () => { ss.revoked = true; render(); toast('Доступ отозван. Вернуть его может только администратор'); });
+    return;
+  }
+  /* Отметка в момент записи: сказали важное — отметил сразу, не искать потом в
+     часовой расшифровке. Отметки переезжают в сохранённую запись. */
+  if (hit('[data-recmark]')) {
+    const i = M.rec.lines.length - 1;
+    if (i < 0) return;
+    const has = M.rec.marks.includes(i);
+    M.rec.marks = has ? M.rec.marks.filter(x => x !== i) : M.rec.marks.concat(i);
+    render(); toast(has ? 'Отметка снята' : 'Место отмечено', true);
+    return;
+  }
+
+  /* --- список и действия над записью --- */
+  const rm = hit('[data-rowmenu]');
+  if (rm) { e.stopPropagation(); openSheet('row', rm.dataset.rowmenu); return; }
+  const ms = hit('[data-movesheet]');
+  if (ms) { openSheet('move', ms.dataset.movesheet); return; }
+  const mt = hit('[data-moveto]');
+  if (mt) {
+    const f = FILES.find(x => x.id === mt.dataset.mid);
+    if (f) f.folder = mt.dataset.moveto || null;
+    closeSheet(); render(); toast('Запись перемещена', true); return;
+  }
+  const del = hit('[data-todelete]');
+  if (del) {
+    const f = FILES.find(x => x.id === del.dataset.todelete);
+    if (f) f.deleted = true;
+    closeSheet();
+    if (M.screen === 'note') M.screen = 'files';
+    render(); toast('Запись в корзине', true); return;
+  }
+  const res = hit('[data-restore]');
+  if (res) { const f = FILES.find(x => x.id === res.dataset.restore); if (f) f.deleted = false; closeSheet(); render(); return; }
+  /* Удаление навсегда — через подтверждение, как и отмена записи. Прототип сам
+     объявил правило «необратимое только через подтверждение», а здесь стирал
+     молча: промахнулся строкой в корзине — записи больше нет. */
+  const pu = hit('[data-purge]');
+  if (pu) {
+    const id = pu.dataset.purge;
+    askConfirm({ title: 'Удалить навсегда?',
+      body: 'Запись исчезнет из корзины, и восстановить её будет нечем.',
+      yes: 'Удалить навсегда', no: 'Оставить' },
+      () => { const i = FILES.findIndex(x => x.id === id); if (i > -1) FILES.splice(i, 1); toast('Запись удалена навсегда'); });
+    return;
+  }
+  /* Действия активной вкладки — перенос из настольного меню вкладки. */
+  if (hit('[data-regen]')) {
+    const f = file(); closeSheet();
+    delete M.generated[f.id + ':' + M.tab];
+    if (M.tab === 'summary') f.summaryEmpty = true;
+    render(); return;
+  }
+  if (hit('[data-deltab]')) {
+    const f = file(); closeSheet();
+    f.custom = (f.custom || []).filter(c => c.id !== M.tab);
+    delete M.generated[f.id + ':' + M.tab];
+    M.tab = 'summary'; render(); toast('Разбор удалён', true); return;
+  }
+  const rn = hit('[data-rename]');
+  if (rn) {
+    const f = FILES.find(x => x.id === rn.dataset.rename); closeSheet();
+    if (!f) return;
+    const v = prompt(t('Новое название записи'), f.title);
+    if (v && v.trim()) { f.title = v.trim(); render(); }
+    return;
+  }
+  const fl = hit('[data-file]');
+  if (fl) {
+    const fromSearch = M.screen === 'search' && M.q.trim();
+    closeSheet();
+    openFile(fl.dataset.file, fl.dataset.at, fromSearch ? M.q : '');
+    return;
+  }
+
+  /* --- поделиться и выгрузка --- */
+  if (hit('[data-share]')) { openSheet('share'); return; }
+  if (hit('#shareCopy')) {
+    const v = $('#shareLink').value;
+    (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).catch(() => {});
+    closeSheet(); toast('Ссылка скопирована'); return;
+  }
+  const ex = hit('[data-export]');
+  if (ex) {
+    const f = file(); closeSheet();
+    if (ex.dataset.export === 'transcript') download(safeName(f.title) + ' — ' + t('расшифровка') + '.txt', asText(f));
+    else download(safeName(f.title) + ' — ' + t('конспект') + '.txt', asSummary(f));
+    toast('Файл выгружен'); return;
+  }
+
+  /* --- проигрыватель --- */
+  if (hit('#btnPlay') || hit('[data-playtoggle]')) {
+    setPlaying(!M.playing);
+    if (M.sheet === 'player') openSheet('player');       // обновить вид кнопки в шторке
+    return;
+  }
+  const sk = hit('[data-seek]');
+  if (sk) { const f = file(); if (f) { f.at = posOf(f) + (+sk.dataset.seek); f.at = posOf(f); paintPlayer(); } return; }
+  const wv = hit('#wave');
+  if (wv) {
+    const f = file(), r = wv.getBoundingClientRect();
+    if (f) { f.at = f.sec * Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)); paintPlayer(); }
+    return;
+  }
+  /* Нажатие на реплику переводит звук к ней: проверить цитату на слух — одно
+     нажатие, а не поиск места ползунком. */
+  const sg = hit('.m-seg-row');
+  if (sg) {
+    const f = file(), s = segsOf(f)[+sg.dataset.seg] || segsOf(FILES[0])[+sg.dataset.seg];
+    if (f && s) { f.at = Math.min(f.sec, s.sec); paintPlayer(); }
+    return;
+  }
+  if (hit('#btnMark')) {
+    const f = file(), cs = curSeg(f);
+    if (cs < 0) { toast('Отмечать нечего — расшифровки пока нет'); return; }
+    const added = toggleMark(f.id, cs);
+    render(); toast(added ? 'Место отмечено — собрано во «Важном»' : 'Отметка снята', true);
+    return;
+  }
+  const spd = hit('[data-speed]');
+  if (spd) {
+    M.speed = +spd.dataset.speed;
+    if (M.sheet === 'player') { openSheet('player'); paintPlayer(); }
+    else { closeSheet(); render(); }
+    return;
+  }
+
+  /* --- поиск внутри записи --- */
+  if (hit('[data-find]')) { M.findOpen = !M.findOpen; if (!M.findOpen) M.find = ''; M.tab = 'transcript'; render(); return; }
+  if (hit('[data-findclose]')) { M.findOpen = false; M.find = ''; render(); return; }
+
+  /* --- вкладки записи и формирование --- */
+  const tab = hit('[data-tab]');
+  if (tab) { M.tab = tab.dataset.tab; render(); return; }
+  const gen = hit('[data-gen]');
+  if (gen) {
+    const kind = gen.dataset.gen;
+    gen.disabled = true;
+    setTimeout(() => { M.generated[M.fileId + ':' + kind] = true; render(); }, 900);
+    return;
+  }
+  /* Шаблон для новых записей: тот же смысл, что «Применять по умолчанию» в
+     настольном. Шторка остаётся открытой — человек видит, что переключатель
+     встал, и сам решает, закрывать её или применить шаблон к этой записи. */
+  const td = hit('[data-tpldefault]');
+  if (td) {
+    const name = td.dataset.tpldefault;
+    M.tplDefault = M.tplDefault === name ? null : name;
+    render();
+    toast(M.tplDefault ? t('Новые записи будут разбираться шаблоном') + ' «' + name + '»'
+                       : t('Шаблон по умолчанию снят'));
+    return;
+  }
+  const at = hit('[data-addtpl]');
+  if (at) {
+    const f = file(), id = 'c' + Date.now().toString(36);
+    if (M.screen !== 'note') { closeSheet(); toast('Откройте запись, чтобы применить шаблон'); return; }
+    f.custom.push({ id, name: at.dataset.addtpl });
+    M.tab = id; closeSheet(); render(); return;
+  }
+
+  /* --- порядок и шторки --- */
+  const sh = hit('[data-sheet]');
+  if (sh) {
+    M.moveAfterCreate = sh.dataset.formid || null;
+    openSheet(sh.dataset.sheet);
+    return;
+  }
+  const sb = hit('[data-sortby]');
+  if (sb) {
+    if (M.sort === sb.dataset.sortby) M.sortDir = M.sortDir === 'asc' ? 'desc' : 'asc';
+    else { M.sort = sb.dataset.sortby; M.sortDir = SORT[M.sort].dir; }
+    closeSheet(); render(); return;
+  }
+  const mic = hit('[data-mic]');
+  if (mic) {
+    M.micSrc = mic.dataset.mic;
+    closeSheet(); render();
+    /* Выбран диктофон, а он молчит — говорим сразу, чем пишем на самом деле:
+       это состояние, в котором сотрудник окажется чаще всего. */
+    toast(micFallback()
+      ? t('Диктофон не на связи — записывает микрофон телефона')
+      : t('Источник записи:') + ' ' + t(M.micSrc), !micFallback());
+    return;
+  }
+
+  /* --- вопрос по записям --- */
+  const aq = hit('[data-askq]');
+  if (aq) { M.ask = { ...M.ask, q: aq.dataset.askq, asked: true }; render(); return; }
+  if (hit('#askGo')) { M.ask = { ...M.ask, q: $('#askQ').value, asked: true }; render(); return; }
+  const af = hit('[data-askfolder]');
+  if (af) { M.ask = { ...M.ask, folder: af.dataset.askfolder || null }; closeSheet(); render(); return; }
+  const pr = hit('[data-person]');
+  if (pr) { e.stopPropagation(); openSheet('person', pr.dataset.person); return; }
+  const en = hit('.fm-ent');
+  if (en) { openSheet('person', en.textContent.trim()); return; }
+
+  /* --- шаблоны --- */
+  const tp = hit('[data-tpl]');
+  if (tp) { openSheet('tpl', tp.dataset.tpl); return; }
+  if (hit('[data-newtpl]')) { openSheet('newtpl'); return; }
+  /* Новая папка: цвет выбирается кружком, создание добавляет папку по-настоящему
+     и, если пришли из перемещения записи, сразу переносит запись в неё. */
+  const sw = hit('[data-swatch]');
+  if (sw) {
+    M.newFolderColor = +sw.dataset.swatch;
+    const name = ($('#folderName') || {}).value || '';
+    openSheet('newfolder');
+    if ($('#folderName')) { $('#folderName').value = name; $('#folderSave').disabled = !name.trim(); }
+    return;
+  }
+  if (hit('#folderSave')) {
+    const name = $('#folderName').value.trim();
+    if (!name) return;
+    if (FOLDERS.some(f => f.name.toLowerCase() === name.toLowerCase())) {
+      toast('Папка с таким названием уже есть'); return;
+    }
+    FOLDERS.push({ name, color: SWATCH[M.newFolderColor] });
+    const moveId = M.moveAfterCreate;
+    M.moveAfterCreate = null;
+    if (moveId) {
+      const f = FILES.find(x => x.id === moveId);
+      if (f) f.folder = name;
+    }
+    closeSheet(); applyLang(); render();
+    toast(moveId ? 'Папка создана, запись перемещена' : 'Папка создана', true);
+    return;
+  }
+  if (hit('#tplSave')) {
+    TEMPLATES.push({ t: $('#tplName').value.trim(), s: $('#tplWhat').value.trim() || t('Свой разбор записи.'),
+      cat: 'Общие', uses: 0, author: 'Вы' });
+    closeSheet(); toast('Шаблон создан', true); render(); return;
+  }
+
+  /* --- настройки --- */
+  const tg = hit('[data-toggle]');
+  if (tg) { M.tgl[tg.dataset.toggle] = !tg.classList.contains('is-on'); tg.classList.toggle('is-on'); return; }
+  if (hit('[data-passwd]')) { toast(t('Ссылка для смены пароля отправлена на') + ' a.ralovets@infomaximum.com'); return; }
+  if (hit('[data-askmore]')) { toast('Заявка на расширение лимита отправлена администратору'); return; }
+  if (hit('[data-getapp]')) { toast('Установщик скачивается с сервера организации'); return; }
+  const tpc = hit('[data-topic]');
+  if (tpc) { $('#supMsg').value = tpc.dataset.topic; $('#supMsg').focus(); return; }
+  if (hit('[data-supsend]')) {
+    const v = ($('#supMsg') || {}).value || '';
+    if (!v.trim()) { toast('Опишите вопрос — иначе отправлять нечего'); return; }
+    $('#supMsg').value = ''; toast('Приняли обращение. Ответим в рабочие часы, обычно за 15 минут.'); return;
+  }
+});
+
+/* ПРОКРУТКА ПОЛОС РУКОЙ. На телефоне чипсы и вкладки прокручивают пальцем —
+   это нативная прокрутка, её не трогаем. В прототипе на компьютере руки нет, а
+   колесо мыши крутит страницу вертикально, поэтому полосу тянут МЫШЬЮ: так
+   показ ведёт себя как приложение, а не как веб-страница со скроллбаром.
+   Перетаскивание мышью и только мышью; палец идёт нативным путём. */
+let strip = null, stripDragged = false;
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'mouse' || e.button) return;
+  const el = e.target.closest('.m-segs');
+  if (!el || el.scrollWidth <= el.clientWidth) return;
+  strip = { el, x: e.clientX, from: el.scrollLeft, moved: 0 };
+});
+document.addEventListener('pointermove', e => {
+  if (!strip) return;
+  const dx = e.clientX - strip.x;
+  strip.moved = Math.max(strip.moved, Math.abs(dx));
+  /* Порог, ниже которого это ещё нажатие, а не перетаскивание: без него дрожание
+     руки на нажатии чипса съедало бы само нажатие. */
+  if (strip.moved > 4) { strip.el.scrollLeft = strip.from - dx; e.preventDefault(); }
+});
+document.addEventListener('pointerup', () => {
+  if (strip && strip.moved > 4) stripDragged = true;
+  strip = null;
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'q') { M.q = e.target.value; render(); }
+  if (e.target.id === 'findQ') { M.find = e.target.value; render(); }
+  if (e.target.id === 'askQ') M.ask.q = e.target.value;
+  if (e.target.id === 'tplName') $('#tplSave').disabled = !e.target.value.trim();
+  if (e.target.id === 'folderName') $('#folderSave').disabled = !e.target.value.trim();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'askQ') { M.ask.asked = true; render(); }
+  if (e.key === 'Escape' && M.sheet) closeSheet();
+});
+
+/* Плашка прототипа рисуется из состояния, как и экран: иначе переключатель
+   показывает не то, что включено. Владелец подсветки один — эта функция. */
+function paintPlaque() {
+  document.querySelectorAll('#langSwitch button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.setlang === LANG));
+  document.querySelectorAll('#orgSwitch button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.orgmode === ORG.mode));
+  document.querySelectorAll('#profSwitch button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.hintprof === ORG.hintProfile));
+  document.querySelectorAll('#permSwitch button').forEach(b =>
+    b.classList.toggle('is-on', !!ORG[b.dataset.orgtoggle]));
+}
+
+/* ============================== ЗАПУСК ==================================== */
+(function () {
+  const q = new URLSearchParams(location.search);
+  setOs(q.get('os') || 'ios');
+  if (q.get('lang')) setLang(q.get('lang'));
+  if (q.get('theme')) document.documentElement.setAttribute('data-theme', q.get('theme'));
+  if (q.get('screen')) M.screen = q.get('screen');
+  if (q.get('scope')) { M.scope = { kind: q.get('scope'), value: q.get('value') || null }; M.screen = 'files'; }
+  if (q.get('file') && FILES.some(f => f.id === q.get('file'))) { M.fileId = q.get('file'); M.screen = 'note'; }
+  if (q.get('tab')) M.tab = q.get('tab');
+  if (q.get('find')) { M.find = q.get('find'); M.findOpen = true; M.tab = 'transcript'; }
+  if (q.get('at')) { const f = FILES.find(x => x.id === M.fileId); if (f) f.at = Math.max(0, Math.min(f.sec, +q.get('at'))); }
+  if (q.get('mark')) { const f = FILES.find(x => x.id === M.fileId); if (f) M.marks[f.id] = String(q.get('mark')).split(',').map(Number); }
+  if (q.get('set')) { M.setPane = q.get('set'); M.screen = 'set'; }
+  /* Состояния продукта ссылкой: без них ни показать их, ни проверить нельзя. */
+  if (q.get('org')) ORG.mode = q.get('org') === 'mandatory' ? 'mandatory' : 'assistant';
+  if (q.get('profile') && HINT_PROFILES.some(x => x.id === q.get('profile'))) ORG.hintProfile = q.get('profile');
+  if (q.get('link') === 'off') LINK.live = false;
+  if (q.get('disk') === 'full') DISK.freeMin = 12;
+  if (q.get('dev') === 'off') DEVICES.forEach(d => { d.link = 'off'; });
+  if (q.get('mic')) M.micSrc = q.get('mic');
+  if (q.get('q')) { M.q = q.get('q'); M.screen = 'search'; }
+  paintPlaque();
+  render();
+  /* ?rec=on — идущая запись, ?rec=auto — она же, начатая автостартом;
+     ?hints=N — сколько подсказок уже пришло (для показа и проверок). */
+  if (q.get('rec')) {
+    recStart(q.get('rec') === 'auto' ? (OS === 'android' ? 'звонок в Teams' : 'напоминание о встрече') : null);
+    /* `?rec=saved` — экран «запись сохранена». Без своего адреса он оставался
+       вне проверок: URL у него не было, а руками до него доходят не всегда. */
+    if (q.get('rec') === 'saved') {
+      /* Сохранённая запись должна выглядеть настоящей: сначала «прозвучало»
+         несколько реплик, потом остановка. Иначе на экране 00:01 и пустой текст. */
+      M.rec.lines = REC_SRC().slice(0, 8).map((x, i) =>
+        ({ who: x.who, role: x.role, text: x.text, at: (i + 1) * REC_STEP }));
+      M.rec.sec = M.rec.lines.length * REC_STEP;
+      recStop(); render();
+    }
+    if (q.get('hints')) {
+      const lines = linesForHints(ORG.hintProfile, +q.get('hints') || 0);
+      M.rec.lines = REC_SRC().slice(0, lines).map((x, i) =>
+        ({ who: x.who, role: x.role, text: x.text, at: (i + 1) * REC_STEP }));
+      M.rec.sec = M.rec.lines.length * REC_STEP;
+      M.rec.hints = LINK.live ? hintsAfter(ORG.hintProfile, M.rec.lines.length) : [];
+      render();
+    }
+  }
+  /* Шторка открывается ПОСЛЕДНЕЙ: она рисуется из состояния, и до сборки
+     записи список подсказок в ней был бы пуст. */
+  if (q.get('sheet')) openSheet(q.get('sheet'), q.get('sheetid') || (q.get('file') || 'demo'));
+  window.__fmDiag.ran = true;
+})();
+</script>
+</body>
+</html>
