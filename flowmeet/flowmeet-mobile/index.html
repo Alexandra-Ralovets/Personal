@@ -67,9 +67,32 @@ window.__fmDiag = { err: null, ran: false };
 body {
   margin: 0; font-family: 'Roboto', system-ui, sans-serif;   /* служебная плашка вне корпуса */
   background: var(--bg-secondary); color: var(--text-primary);
-  display: flex; flex-direction: column; align-items: center;
-  min-height: 100vh; padding: var(--size-6x) 0 var(--size-10x);
+  display: flex; flex-direction: row; align-items: flex-start; justify-content: center;
+  min-height: 100vh; padding: var(--size-6x) var(--size-4x) var(--size-10x);
+  gap: var(--size-4x);
 }
+.fm-stage {
+  flex: 0 1 auto; min-width: 0;
+  display: flex; flex-direction: column; align-items: center;
+}
+.fm-map {
+  flex: 0 0 272px; width: 272px; max-height: calc(100vh - var(--size-8x));
+  overflow: auto; position: sticky; top: var(--size-4x);
+  padding: var(--padding-l);
+  background: var(--bg-container);
+  border: 1px solid var(--line-border); border-radius: var(--radius-l);
+}
+.fm-map__h { margin: var(--size-4x) 0 var(--space-s); color: var(--text-complimentary); }
+.fm-map__row {
+  display: flex; align-items: center; gap: var(--space-m); width: 100%;
+  min-height: var(--size-8x); padding: var(--padding-s) var(--padding-m);
+  margin: 0 0 var(--size-1x); border: none; border-radius: var(--radius-m);
+  background: transparent; color: var(--text-primary); font-family: inherit;
+  text-align: left; cursor: pointer;
+}
+.fm-map__row:hover { background: var(--bg-container-hover); }
+.fm-map__name { flex: 1 1 auto; min-width: 0; }
+.fm-map__row .fm-tag { flex: 0 0 auto; }
 
 /* ─── Мобильная шкала текста. Только размеры и насыщенность; семейство и цвет
        канонические. ─────────────────────────────────────────────────────────── */
@@ -107,6 +130,7 @@ body {
   font-family: inherit; font-size: 13px; color: var(--text-complimentary); cursor: pointer;
 }
 .fm-plaque__switch button.is-on { background: var(--primary-bg); color: var(--primary-active); border-color: var(--primary-border); }
+.fm-plaque__legend { width: 100%; text-align: center; color: var(--text-hint); }
 
 /* ─────────────────────────── КОРПУС ТЕЛЕФОНА ─────────────────────────────── */
 /* Семейство шрифта — платформенное: у Apple системный San Francisco, у Google
@@ -266,6 +290,7 @@ body {
   padding: 1px var(--padding-s); border-radius: var(--radius-m); background: var(--bg-container-secondary);
   color: var(--text-complimentary); font-size: 13px; line-height: 18px; white-space: nowrap; }
 .fm-tag--green { background: var(--positive-bg); color: var(--positive-base); }
+.fm-tag--orange { background: var(--tag-orange-bg); color: var(--tag-orange-text); }
 .fm-tag--cyan { background: var(--tag-cyan-bg); color: var(--tag-cyan-text); }
 
 /* ─── Группа строк: скруглённая вставка с воздухом по бокам, разделители не
@@ -717,6 +742,8 @@ body {
 </noscript>
 
 
+<aside class="fm-map" id="featureMap" aria-label="Функционал прототипа"></aside>
+<div class="fm-stage">
 <div class="fm-plaque text-caption-2">
   <span class="fm-plaque__tag">Прототип · выброс</span>
   <span><strong style="color:var(--text-primary)">FlowMeet для телефона</strong> — по снимкам эталона, оформление корпоративное (канон miniapp-ui)</span>
@@ -786,6 +813,7 @@ body {
 
   <div class="fm-toast text-body-3" id="toast" role="status"></div>
 </div>
+</div>
 
 <!-- Общая часть двух прототипов: данные, счёт, язык. Своей копии нет. -->
 <script src="../flowmeet-shared/data.js"></script>
@@ -798,7 +826,9 @@ body {
 (function () {
   var need = { devSpace: 'память диктофона', hintsAfter: 'подсказки за репликой',
                recLinesAt: 'ход живой расшифровки', linesForHints: 'ссылка на подсказки',
-               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк' };
+               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк',
+               wrapRoadmap: 'яркость сценариев к разработке',
+               featureMapHtml: 'список функционала прототипа' };
   var miss = Object.keys(need).filter(function (n) {
     /* typeof по необъявленному имени не падает, поэтому проверка безопасна. */
     return eval('typeof ' + n) !== 'function';
@@ -1089,7 +1119,7 @@ function screenFolders() {
       <div class="m-pad" style="margin-bottom:var(--size-4x)">
       <button class="m-card" data-go="membership">
         <div style="display:flex;align-items:center;gap:var(--space-m)">
-          <h3 class="m-head" style="flex:1 1 auto">${t('Личное пространство')}</h3>
+          <h3 class="m-head" style="flex:1 1 auto;min-width:0">${t('Личное пространство')}</h3>
           ${ic(I.go, 'fm-i--s m-row__chev')}
         </div>
         <div class="m-quota__rail"><div class="m-quota__fill" style="width:${q.leftPct}%"></div></div>
@@ -1315,7 +1345,7 @@ function screenNote() {
             f.folder ? `<span class="m-sep"> · </span><span class="m-data">${esc(f.folder)}</span>` : ''}</p>
       </div>
       <div class="m-segsrow"><div class="m-segs">
-        ${tabs.map(x => `<button class="m-seg-btn ${x.id === M.tab ? 'is-on' : ''}" data-tab="${x.id}">${esc(x.name)}</button>`).join('')}
+      ${tabs.map(x => `<button class="m-seg-btn ${x.id === M.tab ? 'is-on' : ''}" data-tab="${x.id}">${esc(x.name)}</button>`).join('')}
         <button class="m-seg-btn" data-sheet="addtpl" aria-label="${t('Добавить разбор по шаблону')}">${ic(I.plus, 'fm-i--s')}</button>
       </div></div>
       ${noteBody(f)}<div class="m-bottom"></div></div>`;
@@ -2238,7 +2268,8 @@ const FAB_ON = ['folders', 'files'];
 function render() {
   const fab = FAB_ON.includes(M.screen)
     ? `<button class="m-fab" data-recnow="1" aria-label="${t('Записать встречу')}">${ic(I.mic, 'fm-i--l')}</button>` : '';
-  $('#app').innerHTML = (SCREENS[M.screen] || screenFolders)() + fab + recOverlay();
+  let body = (SCREENS[M.screen] || screenFolders)();
+  $('#app').innerHTML = body + fab + recOverlay();
   /* Панель разделов видна на КАЖДОМ экране: по HIG её скрытие лишает человека
      ответа «в каком я разделе». Единственное исключение — модальный экран
      записи встречи, он закрывает всё сам. Проигрыватель открытой записи стоит

@@ -72,16 +72,82 @@ body {
   font-family: var(--font-sans); font-size: 14px; line-height: 20px;
   color: var(--text-primary); background: var(--bg-complimentary);
   padding: var(--size-4x);
+  display: flex; flex-direction: row; align-items: flex-start; justify-content: center;
+  gap: var(--size-4x);
+}
+.fm-stage {
+  flex: 1 1 auto; min-width: 0; max-width: 1480px;
   display: flex; flex-direction: column; align-items: center; gap: var(--size-3x);
 }
+/* Список сбоку — не часть окна приложения, только легенда прототипа. */
+.fm-map {
+  flex: 0 0 272px; width: 272px; max-height: calc(100vh - var(--size-8x));
+  overflow: auto; position: sticky; top: var(--size-4x);
+  padding: var(--padding-l);
+  background: var(--bg-container);
+  border: 1px solid var(--line-border); border-radius: var(--radius-l);
+}
+.fm-map__h { margin: var(--size-4x) 0 var(--space-s); color: var(--text-secondary); }
+.fm-map__row {
+  display: flex; align-items: center; gap: var(--space-m); width: 100%;
+  min-height: var(--size-8x); padding: var(--padding-s) var(--padding-m);
+  margin: 0 0 var(--size-1x); border: none; border-radius: var(--radius-m);
+  background: transparent; color: var(--text-primary); font-family: inherit;
+  text-align: left; cursor: pointer;
+}
+.fm-map__row:hover { background: var(--bg-container-hover); }
+.fm-map__name { flex: 1 1 auto; min-width: 0; }
+.fm-map__row .fm-tag { flex: 0 0 auto; }
 
-/* Плашка прототипа + переключатель трёх окон продукта. */
+/* Черновик постановки — вкладка прототипа, не окно продукта. */
+.fm-brief {
+  width: 100%; max-width: 1480px; max-height: calc(100vh - var(--size-16x));
+  overflow: auto; padding: var(--size-6x);
+  background: var(--bg-container); border: 1px solid var(--line-border);
+  border-radius: var(--radius-l);
+}
+.fm-brief.is-hidden { display: none; }
+.fm-brief .text-header-2 { margin: var(--size-6x) 0 var(--size-3x); }
+.fm-brief .text-subheader-1 { margin: var(--size-4x) 0 var(--space-s); }
+.fm-brief p, .fm-brief ol, .fm-brief ul { margin: 0 0 var(--size-3x); }
+.fm-brief li { margin: 0 0 var(--space-s); }
+.fm-brief__toc {
+  display: flex; flex-wrap: wrap; gap: var(--space-m) var(--size-4x);
+  margin: 0 0 var(--size-6x); padding-bottom: var(--size-3x);
+  border-bottom: 1px solid var(--line-divider);
+}
+.fm-brief__toc a { color: var(--primary-active); }
+.fm-uc {
+  margin: 0 0 var(--size-3x); padding: var(--padding-l);
+  border: 1px solid var(--line-divider); border-radius: var(--radius-m);
+}
+.fm-uc__head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-m);
+  margin-bottom: var(--space-s);
+}
+.fm-uc .fm-btn { flex: 0 0 auto; margin-left: auto; }
+.fm-uc p { margin: 0; }
+.fm-bpmn { width: 100%; height: auto; display: block; margin: 0 0 var(--size-4x); }
+.fm-bpmn-lane { fill: var(--bg-container-complimentary); stroke: var(--line-border); }
+.fm-bpmn-task { fill: var(--bg-container); stroke: var(--text-primary); }
+.fm-bpmn-start { fill: var(--bg-container); stroke: var(--primary-base); stroke-width: 2; }
+.fm-bpmn-end { fill: var(--bg-container); stroke: var(--text-primary); stroke-width: 3; }
+.fm-bpmn-gw { fill: var(--bg-container); stroke: var(--text-primary); }
+.fm-bpmn-seq { fill: none; stroke: var(--text-primary); marker-end: url(#fmArr); }
+.fm-bpmn-msg { fill: none; stroke: var(--text-complimentary); stroke-dasharray: 4 3; marker-end: url(#fmArrMsg); }
+.fm-bpmn-t { fill: var(--text-primary); font-size: 11px; font-family: var(--font-sans); }
+.fm-bpmn-lt { fill: var(--text-secondary); font-size: 12px; font-weight: 600; font-family: var(--font-sans); }
+.fm-bpmn-cap { fill: var(--text-hint); font-size: 10px; font-family: var(--font-sans); }
+
+/* Плашка прототипа + переключатель окон продукта и вкладки постановки. */
 .fm-stamp {
   width: 100%; max-width: 1480px;
   display: flex; align-items: center; gap: var(--size-3x); flex-wrap: wrap;
   color: var(--text-complimentary);
 }
 .fm-stamp__spacer { flex: 1 1 auto; }
+.fm-stamp__legend { color: var(--text-hint); }
+
 .fm-seg { display: inline-flex; }                     /* antd: <Segmented> */
 .fm-seg button {
   height: var(--size-7x); padding: 0 var(--padding-l);
@@ -271,11 +337,13 @@ body {
   min-height: var(--size-8x); padding: var(--padding-s) var(--padding-l); margin-bottom: var(--size-1x);
   background: transparent; border: none; border-radius: var(--radius-m);
   font-family: inherit; font-size: 14px; color: var(--text-complimentary);
-  cursor: pointer; text-align: left;
+  cursor: pointer; text-align: left; flex-wrap: nowrap;
 }
 .fm-navitem:hover { background: var(--bg-container-hover); color: var(--text-primary); }
 .fm-navitem.is-active { background: var(--primary-bg); color: var(--text-primary); font-weight: 500; }
-.fm-navitem__count { margin-left: auto; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.fm-navitem__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm-navitem__count { margin-left: auto; color: var(--text-secondary); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.fm-navitem .fm-tag { margin-left: auto; flex: 0 0 auto; }
 .fm-navitem__dot { width: 8px; height: 8px; border-radius: 2px; flex: 0 0 auto; }
 
 .fm-grouphead {
@@ -1121,6 +1189,8 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
 </noscript>
 
 
+<aside class="fm-map" id="featureMap" aria-label="Функционал прототипа"></aside>
+<div class="fm-stage">
 <div class="fm-stamp text-body-3">
   <span class="fm-tag fm-tag--orange">Прототип · выброс</span>
   <span><strong>FlowMeet</strong> — по снимкам эталона, оформление корпоративное (канон miniapp-ui)</span>
@@ -1134,6 +1204,7 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
     <button data-view="app" class="is-on">Приложение</button>
     <button data-view="prefs">Параметры</button>
     <button data-view="tray">Виджет FlowMeet</button>
+    <button data-view="spec">Постановка</button>
   </span>
   <!-- События снаружи: автостарт встречи, обрыв связи, падение детектора
        звонков, кончившееся место. Это НЕ команды продукта, а состояния, в
@@ -1155,6 +1226,8 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
      (нет открытой записи — пункты записи недоступны), поэтому строка меню
      перерисовывается вместе с окном. -->
 <div class="fm-macbar" id="macbar"></div>
+
+<article class="fm-brief is-hidden" id="winBrief" aria-label="Постановка для разработки"></article>
 
 <!-- ═══════════════════════ ОКНО ПРИЛОЖЕНИЯ ═══════════════════════════════ -->
 <div class="fm-win" id="winApp">
@@ -1289,6 +1362,7 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
   <button class="fm-dock__app fm-dock__app--web" data-dockother="Браузер" aria-label="Браузер"><svg class="fm-i fm-i--l" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c1.6 1.6 1.6 9.4 0 11M8 2.5c-1.6 1.6-1.6 9.4 0 11"/></svg></button>
   <span class="fm-dock__sep"></span>
   <button class="fm-dock__app" data-scope="trash" aria-label="Корзина"><svg class="fm-i fm-i--l" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M3.5 5h9M6 5V3.5h4V5M5 5l.6 8.5h4.8L11 5"/></svg></button>
+</div>
 </div>
 
 <div class="fm-toast text-body-2" id="toast" role="status"></div>
@@ -1475,6 +1549,7 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
 
 <!-- Общая часть двух прототипов: данные, счёт, язык. Своей копии нет. -->
 <script src="../flowmeet-shared/data.js"></script>
+<script src="../flowmeet-shared/sa-draft.js"></script>
 
 <script>
 /* СТАРАЯ КОПИЯ ОБЩЕЙ ЧАСТИ — самая частая причина «страница не грузит»: браузер
@@ -1484,7 +1559,10 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
 (function () {
   var need = { devSpace: 'память диктофона', hintsAfter: 'подсказки за репликой',
                recLinesAt: 'ход живой расшифровки', linesForHints: 'ссылка на подсказки',
-               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк' };
+               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк',
+               wrapRoadmap: 'яркость сценариев к разработке',
+               featureMapHtml: 'список функционала прототипа',
+               saDraftHtml: 'черновик постановки' };
   var miss = Object.keys(need).filter(function (n) {
     /* typeof по необъявленному имени не падает, поэтому проверка безопасна. */
     return eval('typeof ' + n) !== 'function';
@@ -1634,11 +1712,8 @@ const scopeTitle = () => S.scope.kind === 'all' ? 'Все файлы'
 function renderQuota() {
   const q = stats();
   $('#quota').innerHTML = `
-    <div class="fm-quota__head">
+    <div class="fm-quota__head" data-go="membership" style="cursor:pointer">
       <span class="text-subheader-2">Мой лимит</span>
-      <button class="fm-btn fm-btn--text fm-btn--sm" data-go="membership">
-        <svg class="fm-i fm-i--s" viewBox="0 0 16 16"><path d="M6 4.5 9.5 8 6 11.5"/></svg>
-      </button>
     </div>
     <div class="fm-quota__rail"><div class="fm-quota__fill" style="width:${q.leftPct}%"></div></div>
     <p class="fm-quota__note text-caption-2" style="margin:0">${phraseQuota(q)}</p>`;
@@ -1649,7 +1724,7 @@ function renderQuota() {
 function navItem(o) {
   return `<button class="fm-navitem ${o.active ? 'is-active' : ''}" ${o.attrs || ''}>
     ${o.dot ? `<span class="fm-navitem__dot" style="background:${o.dot}"></span>` : ic(o.icon)}
-    <span>${esc(o.text)}</span>
+    <span class="fm-navitem__label">${esc(o.text)}</span>
     ${o.count === undefined ? '' : `<span class="fm-navitem__count text-caption-2"${
       o.countLabel ? ` title="${esc(o.countLabel)}" aria-label="${esc(o.countLabel)}"` : ''}>${o.count}</span>`}
   </button>`;
@@ -1727,9 +1802,9 @@ function renderTabs() {
   const box = $('#tabs');
   if (S.screen !== 'note' || !file()) { box.style.display = 'none'; box.innerHTML = ''; return; }
   box.style.display = '';
-  box.innerHTML = tabsOf(file()).map(t => `
-    <button class="fm-tab ${t.id === S.tab ? 'is-active' : ''}" data-tab="${t.id}">${esc(t.name)}
-      ${t.id === S.tab && t.id !== 'transcript' ? ic(I.caretD, 'fm-i--s fm-tab__caret') : ''}</button>`).join('')
+  box.innerHTML = tabsOf(file()).map(tab => `
+    <button class="fm-tab ${tab.id === S.tab ? 'is-active' : ''}" data-tab="${tab.id}">${esc(tab.name)}
+      ${tab.id === S.tab && tab.id !== 'transcript' ? ic(I.caretD, 'fm-i--s fm-tab__caret') : ''}</button>`).join('')
     + `<button class="fm-tab fm-tab--add fm-tip" id="tabAdd" data-tip="Добавить разбор по шаблону">${ic(I.plus, 'fm-i--s')}</button>`;
 }
 
@@ -2238,12 +2313,12 @@ function screenNote() {
       </div>`;
   }
   if (S.tab === 'summary') {
-    if (f.summaryEmpty && !isGen(f.id, 'summary')) return emptyGen('summary');
-    return `<div class="fm-doc">${blockify(f.summary || FILES[0].summary)}</div>`;
+    if (f.summaryEmpty && !isGen(f.id, 'summary')) return wrapRoadmap(emptyGen('summary'));
+    return wrapRoadmap(`<div class="fm-doc">${blockify(f.summary || FILES[0].summary)}</div>`);
   }
   const c = f.custom.find(x => x.id === S.tab);
-  return `<div class="fm-doc">${blockify((c && f[c.id]) ||
-    `<h1 class="text-header-1">${esc(c ? c.name : 'Разбор')}</h1><p class="text-body-2">Шаблон добавлен, разбор ещё не формировали.</p>`)}</div>`;
+  return wrapRoadmap(`<div class="fm-doc">${blockify((c && f[c.id]) ||
+    `<h1 class="text-header-1">${esc(c ? c.name : 'Разбор')}</h1><p class="text-body-2">Шаблон добавлен, разбор ещё не формировали.</p>`)}</div>`);
 }
 
 /* Подсветка найденного слова. Правило сравнения берём у общего владельца
@@ -2439,12 +2514,22 @@ function screenOutbox() {
 
 /* ============================== РОУТЕР ==================================== */
 function render() {
+  const specOn = S.view === 'spec';
   $('#winApp').classList.toggle('is-hidden', S.view !== 'app');
   $('#winPrefs').classList.toggle('is-hidden', S.view !== 'prefs');
   $('#winTray').style.display = S.view === 'tray' ? 'flex' : 'none';
+  $('#winBrief').classList.toggle('is-hidden', !specOn);
   document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('is-on', b.dataset.view === S.view));
   document.querySelectorAll('#osSwitch button').forEach(b => b.classList.toggle('is-on', b.dataset.setos === OS));
+  const map = $('#featureMap');
+  if (map) {
+    map.style.display = specOn ? 'none' : '';
+    if (!specOn) map.innerHTML = featureMapHtml();
+  }
+  const bar = $('#macbar');
+  if (bar) bar.style.display = specOn ? 'none' : '';
   renderMacbar();                    /* меню зависят от того, что открыто, — рисуются каждый раз */
+  if (specOn) { $('#winBrief').innerHTML = saDraftHtml(); return; }
   if (S.view === 'prefs') { renderPrefs(); return; }
   if (S.view === 'tray') { renderTray(); return; }
 
@@ -2453,7 +2538,8 @@ function render() {
   const S_ = { files: screenFiles, home: screenHome, ask: screenAsk,
                templates: screenTemplates, membership: screenMembership, note: screenNote,
                devices: screenDevices, outbox: screenOutbox };
-  $('#scroll').innerHTML = (S_[S.screen] || screenFiles)();
+  const html = (S_[S.screen] || screenFiles)();
+  $('#scroll').innerHTML = html;
   /* Отрисовка полная, поэтому поле поиска пересоздаётся — возвращаем в него
      курсор, иначе набирать можно только по одной букве. */
   const q = $('#q');
@@ -3679,7 +3765,7 @@ document.addEventListener('click', e => {
   }
 
   /* --- новая папка --- */
-  if (hit('[data-newfolder]')) {
+  if (hit('[data-newfolder]') || hit('[data-folder="new"]')) {
     S.newFolder = { name: '', color: 0 };
     renderFolderModal(); $('#scrimFolder').classList.add('is-open'); return;
   }
@@ -3729,7 +3815,9 @@ document.addEventListener('click', e => {
        показывает: из окна «Параметры» пункты «Диктофоны…» и «Очередь
        отправки…» меняли экран под скрытым окном и выглядели мёртвыми.
        Та же ошибка уже была у разделов записей (data-scope). */
-    closeMenu(); S.view = 'app'; goScreen(go.dataset.go); return;
+    closeMenu(); S.view = 'app';
+    if (go.dataset.tab) S.tab = go.dataset.tab;
+    goScreen(go.dataset.go); return;
   }
   if (hit('#wsBtn')) { $('#wsBtn').classList.add('is-open'); showMenu($('#wsBtn'), MENU_WS, { wide: true }); return; }
   const fold = hit('[data-fold]');
@@ -4096,7 +4184,7 @@ document.addEventListener('click', e => {
     document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
     return;
   }
-  if (hit('#btnAdd')) { showMenu($('#btnAdd'), MENU_ADD, { wide: true }); return; }
+  if (hit('#btnAdd') || hit('[data-addrec]')) { showMenu($('#btnAdd'), MENU_ADD, { wide: true }); return; }
   if (hit('[data-upload]')) { closeMenu(); $('#fileIn').click(); return; }
   if (hit('[data-recnow]')) { closeMenu(); recStart(); return; }
   /* «Забрать с диктофона» ведёт на экран устройств: раньше пункт отвечал
@@ -4333,7 +4421,7 @@ document.addEventListener('selectionchange', () => {
 addEventListener('scroll', () => { if (performance.now() - menuAt > 250) closeMenu(); }, true);
 
 /* Начальное состояние из строки запроса — чтобы дать ссылку сразу на экран:
-   ?os=mac (платформенная рамка) · ?view=prefs|tray
+   ?os=mac (платформенная рамка) · ?view=prefs|tray|spec
    ?screen=files|home|ask|templates|membership|note
    ?file=tz&tab=transcript · ?scope=folder&value=Продажи · ?settings=vocab
    ?explore=integr · ?prefs=recording · ?theme=dark · ?list=off

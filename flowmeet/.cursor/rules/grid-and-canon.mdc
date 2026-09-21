@@ -1,0 +1,30 @@
+---
+description: Перед любой правкой вёрстки десктопного прототипа FlowMeet смотреть сетку и канон miniapp-ui. Не для мобильного прототипа.
+globs: flowmeet-desktop/**
+alwaysApply: false
+---
+
+# Сетка и канон — только desktop-прототип FlowMeet
+
+Правило для `flowmeet-desktop/`. **Не** для `flowmeet-mobile/` и не для других проектов.
+
+Перед правкой UI прочитай канон в файле, не выдумывай CSS:
+
+- токены: `flowmeet-desktop/ds-core-tokens.css` (и комментарий в шапке `index.html`: miniapp-ui, Ant Design v5);
+- уже собранные блоки: Menu `.fm-navitem` / `.is-active` = `--primary-bg`, Tag `.fm-tag` / `.fm-tag--orange`, счётчик справа, одна строка, `white-space: nowrap`;
+- шаг сетки — `--size-*`, `--space-*`, `--padding-*`. Без своих отступов «на глаз».
+
+Пока не свершил с соседним каноническим блоком (тот же Menu, та же Tag) — не пиши стили.
+
+Запрещено:
+
+- перекрашивать выбранный пункт меню (selected = мята канона, не warning);
+- длинный текст в Tag, из‑за которого подпись пункта переносится;
+- литералы цвета и произвольная «плашка прототипа» вместо Tag/Menu.
+
+Проверка: открыть экран, посмотреть одну строку пункта и selected — как у «Все файлы», не как у самодельной метки.
+
+После правки прототипа сразу `scp` в
+`corphub:/home/electerm/data/CorpHub/personal/projects/hardware-module/flowmeet-{desktop,mobile,shared}/`.
+Это и есть страница http://a1.ch.corp.infomaximum.com:51863/hardware/flowmeet-desktop/.
+Не копировать в Desktop, Personal-клоны и другие папки на диске. Локальный http.server — только проверка, не выкладка.

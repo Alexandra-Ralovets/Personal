@@ -1984,3 +1984,111 @@ dictAdd({
 });
 
 dictAdd({ 'Ответ': 'Answer' });
+
+/* Статус относительно живого продукта. «В продукте» — передача Пименова 26.08
+   (запись, подсказки, расшифровка, список файлов, диктофоны, очередь, режим
+   организации, настройки/сервер, виджет). Остальное в макете есть, в продукте
+   нет — сверка 27.08. Список рисуется СБОКУ от окна, само окно не красим. */
+const ROADMAP_SCREENS = { home: 1, ask: 1, templates: 1, membership: 1 };
+function isRoadmapScreen(name) { return !!ROADMAP_SCREENS[name]; }
+function isRoadmapNoteTab(id) { return id !== 'transcript'; }
+function roadmapCls() { return ''; }
+function roadmapTip() { return t('Есть только в прототипе — к разработке'); }
+function roadmapBadge() { return ''; }
+function wrapRoadmap(html) { return html; }
+
+const PROTO_FEATURES = [
+  { h: 'Пространство', rows: [
+    { t: 'Личное пространство', on: 1, go: 'files', scope: 'all' },
+    { t: 'Настройки пространства', on: 1, open: 'scrimSettings' },
+    { t: 'Создать пространство команды', on: 0, open: 'scrimTeam' },
+    { t: 'Квота и лимиты', on: 0, go: 'membership' },
+    { t: 'Написать в поддержку', on: 1, open: 'scrimSettings', setpane: 'support' },
+    { t: 'Отзыв о программе', on: 1, open: 'scrimSettings', setpane: 'feedback' },
+    { t: 'Скачать приложение', on: 0, open: 'scrimExplore', exppane: 'apps' },
+    { t: 'Выйти', on: 1, logout: 1 }
+  ]},
+  { h: 'Навигация', rows: [
+    { t: 'Поиск по названию, говорящим и тексту', on: 0, scope: 'search' },
+    { t: 'Главная', on: 0, go: 'home' },
+    { t: 'Спросить ИИ', on: 0, go: 'ask' },
+    { t: 'Шаблоны', on: 0, go: 'templates' },
+    { t: 'Возможности', on: 0, open: 'scrimExplore' },
+    { t: 'Диктофоны', on: 1, go: 'devices' },
+    { t: 'Отправка на сервер', on: 1, go: 'outbox' }
+  ]},
+  { h: 'Записи и папки', rows: [
+    { t: 'Список записей', on: 1, scope: 'all' },
+    { t: 'Создание папок', on: 1, folder: 'new' },
+    { t: 'Без папки', on: 1, scope: 'unfiled' },
+    { t: 'Корзина', on: 1, scope: 'trash' },
+    { t: 'Добавить запись', on: 1, addrec: 1 }
+  ]},
+  { h: 'Запись встречи', rows: [
+    { t: 'Запись и виджет у часов', on: 1, view: 'tray' },
+    { t: 'Живые подсказки', on: 1, view: 'tray' },
+    { t: 'Отметки в записи', on: 0, view: 'tray' }
+  ]},
+  { h: 'Открытая запись', rows: [
+    { t: 'Расшифровка', on: 1, go: 'note', tab: 'transcript' },
+    { t: 'Конспект', on: 0, go: 'note', tab: 'summary' },
+    { t: 'Вкладки по шаблону', on: 0, go: 'note', tab: 'summary' },
+    { t: 'Поделиться', on: 0, go: 'note' },
+    { t: 'Обрезка аудио', on: 0, go: 'note' },
+    { t: 'Выгрузка файлом', on: 1, go: 'note' }
+  ]},
+  { h: 'Настройки', rows: [
+    { t: 'Параметры приложения', on: 1, view: 'prefs' },
+    { t: 'Сервер организации', on: 1, view: 'prefs', prefs: 'cloud' },
+    { t: 'Режим организации', on: 1, view: 'prefs', prefs: 'org' },
+    { t: 'Свой словарь', on: 0, open: 'scrimSettings', setpane: 'vocab' }
+  ]}
+];
+
+function featureMapHtml() {
+  return `<p class="text-subheader-1" style="margin:0 0 var(--space-s)">${t('Функционал прототипа')}</p>`
+    + PROTO_FEATURES.map(g => `<p class="text-subheader-2 fm-map__h">${t(g.h)}</p>`
+      + g.rows.map(r => {
+        const bits = ['type="button"', 'class="fm-map__row"', 'data-feat="1"'];
+        if (r.go) bits.push(`data-go="${r.go}"`);
+        if (r.scope) bits.push(`data-scope="${r.scope}"`);
+        if (r.view) bits.push(`data-view="${r.view}"`);
+        if (r.open) bits.push(`data-open="${r.open}"`);
+        if (r.setpane) bits.push(`data-setpane="${r.setpane}"`);
+        if (r.exppane) bits.push(`data-exppane="${r.exppane}"`);
+        if (r.prefs) bits.push(`data-prefs="${r.prefs}"`);
+        if (r.tab) bits.push(`data-tab="${r.tab}"`);
+        if (r.folder) bits.push(`data-folder="${r.folder}"`);
+        if (r.logout) bits.push('data-logout="1"');
+        if (r.addrec) bits.push('data-addrec="1"');
+        const tag = r.on
+          ? `<span class="fm-tag fm-tag--green">${t('в продукте')}</span>`
+          : `<span class="fm-tag fm-tag--orange">${t('к разработке')}</span>`;
+        return `<button ${bits.join(' ')}><span class="fm-map__name text-body-3">${t(r.t)}</span>${tag}</button>`;
+      }).join('')).join('');
+}
+
+dictAdd({
+  'к разработке': 'to build',
+  'в продукте': 'in product',
+  'Функционал прототипа': 'Prototype features',
+  'Пространство': 'Space',
+  'Навигация': 'Navigation',
+  'Записи и папки': 'Recordings and folders',
+  'Запись встречи': 'Meeting recording',
+  'Открытая запись': 'Open recording',
+  'Настройки пространства': 'Space settings',
+  'Поиск по названию, говорящим и тексту': 'Search by title, speakers and transcript',
+  'Отправка на сервер': 'Upload queue',
+  'Список записей': 'Recording list',
+  'Создание папок': 'Create folders',
+  'Добавить запись': 'Add recording',
+  'Запись и виджет у часов': 'Recording and tray widget',
+  'Живые подсказки': 'Live hints',
+  'Отметки в записи': 'In-recording marks',
+  'Вкладки по шаблону': 'Template tabs',
+  'Обрезка аудио': 'Trim audio',
+  'Выгрузка файлом': 'Export file',
+  'Параметры приложения': 'App settings',
+  'Есть только в прототипе — к разработке': 'Prototype only — still to build'
+});
