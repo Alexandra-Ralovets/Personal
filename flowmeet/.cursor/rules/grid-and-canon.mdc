@@ -24,7 +24,4 @@ alwaysApply: false
 
 Проверка: открыть экран, посмотреть одну строку пункта и selected — как у «Все файлы», не как у самодельной метки.
 
-После правки прототипа сразу `scp` в
-`corphub:/home/electerm/data/CorpHub/personal/projects/hardware-module/flowmeet-{desktop,mobile,shared}/`.
-Это и есть страница http://a1.ch.corp.infomaximum.com:51863/hardware/flowmeet-desktop/.
-Не копировать в Desktop, Personal-клоны и другие папки на диске. Локальный http.server — только проверка, не выкладка.
+Выкладка на a1 после правки — правило `publish-to-a1.mdc` (alwaysApply). Здесь только сетка и канон.

@@ -1,0 +1,24 @@
+---
+description: После правок прототипа FlowMeet сразу заливать на a1. Локальный сервер — не выкладка.
+alwaysApply: true
+---
+
+# Живой прототип — только a1
+
+Показ заказчику и проверка «что залито» — страница
+http://a1.ch.corp.infomaximum.com:51863/hardware/flowmeet-desktop/
+(телефон: `.../flowmeet-mobile/`).
+
+После любой правки `flowmeet-desktop/`, `flowmeet-mobile/` или `flowmeet-shared/` в **том же ходе**, до ответа «готово»:
+
+```
+scp -o BatchMode=yes <файлы> corphub:/home/electerm/data/CorpHub/personal/projects/hardware-module/flowmeet-{desktop,mobile,shared}/
+```
+
+Не копировать в Desktop, Personal-клоны и другие папки на диске.
+
+`python -m http.server` / `127.0.0.1:8765` — только локальная проверка. Ходу нельзя заканчиваться словами «сделано», если scp не прошёл (`exit 0`).
+
+Если auto-review режет scp — сразу карточка approve (`request_smart_mode_approval`), не откладывать на «пользователь спросит, заливал ли ты». Не считать блок причиной оставить работу только на ПК.
+
+В ответе назови URL a1. Если в ссылке есть `?v=`, напомни жёсткое обновление (`Ctrl+Shift+R`), иначе браузер держит старый HTML.
