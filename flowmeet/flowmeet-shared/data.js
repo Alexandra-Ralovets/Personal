@@ -150,6 +150,9 @@ const FILES = [
   { id: 'demo', title: 'Демонстрация Proceset · производственный холдинг',
     ts: dayAgo(1, 14, 35), dur: '25 мин 57 с', at: 281, total: '25:57',
     folder: 'Продажи', src: 'Рабочий стол', custom: [{ id: 'obj', name: 'Возражения и ответы' }],
+    send: 'sent',
+    card: { id: 'nord', name: 'ООО «Норд»' },
+    bind: 'calendar',
     transcript: [
       T('00:00:00','Сергей Ильин','мы','Давайте начнём с того, зачем вы нас собрали. Я правильно понимаю, что боль в согласовании закупок — вы не видите, где заявка стоит?'),
       T('00:00:21','Марина Ковалёва','заказчик','Да, ровно так. Заявка проходит через четыре подразделения, и каждое ведёт свою табличку. Когда снабжение спрашивает «где заявка», ответ ищут руками, обзванивая людей. По ощущениям неделю из трёх съедает просто ожидание.'),
@@ -214,6 +217,7 @@ const FILES = [
   { id: 'tz', title: 'Согласование ТЗ · интеграция с 1С',
     ts: dayAgo(0, 11, 20), dur: '42 мин 8 с', at: 0, total: '42:08',
     folder: 'Внедрение', src: 'Рабочий стол', custom: [], summaryEmpty: true,
+    send: 'sent',
     transcript: [
       T('00:00:00','Ольга Тимина','мы','Собрались уточнить объём интеграции. Главный вопрос — из какой системы берём справочник контрагентов.'),
       T('00:00:34','Павел Гущин','заказчик','Справочник ведём в 1С, но часть контрагентов заводят прямо в почте, и они туда не попадают. Это придётся как-то учитывать.'),
@@ -224,6 +228,7 @@ const FILES = [
   { id: 'plan', title: 'Планёрка направления',
     ts: dayAgo(2, 10, 42), dur: '1 ч 4 мин 38 с', at: 0, total: '1:04:38',
     folder: null, src: 'Диктофон', custom: [],
+    send: 'sent', notClient: true,
     transcript: [
       T('00:00:00','Ведущий','','Идём по кругу: что сделано, что мешает. Начинаем со сборок.'),
       T('00:00:18','Инженер сборок','','Установщик под Windows готов и раздаётся. Под macOS собирается, но без подписи — раздавать нельзя.')
@@ -240,7 +245,7 @@ const FILES = [
 
   { id: 'hr', title: 'Собеседование · инженер внедрения',
     ts: dayAgo(2, 16, 34), dur: '17 мин 3 с', at: 0, total: '17:03',
-    folder: 'Найм', src: 'Диктофон', custom: [],
+    folder: 'Найм', src: 'Диктофон', custom: [], notClient: true, send: 'sent',
     transcript: [
       T('00:00:00','Наниматель','','Расскажите про последнее внедрение, которое шло тяжело. Что именно не получалось?'),
       T('00:00:26','Кандидат','','Тяжело шла выгрузка: заказчик отдавал данные срезами руками, и каждый срез приходил в новом формате.')
@@ -273,21 +278,28 @@ const FILES = [
       T('00:01:10','Александра','мы','Хорошо, тогда до четверга.')
     ] },
 
-  { id: 'sup', title: 'Разбор обращения · служба поддержки',
+  { id: 'sup', title: 'Звонок · ООО «Норд»',
     ts: dayAgo(3, 17, 11), dur: '9 мин 41 с', at: 0, total: '09:41',
-    folder: 'Внедрение', src: 'Телефон', custom: [], transcriptEmpty: true, summaryEmpty: true },
+    folder: 'Продажи', src: 'Телефон', custom: [], summaryEmpty: true,
+    send: 'sent',
+    card: { id: 'nord', name: 'ООО «Норд»' },
+    bind: 'phone',
+    transcript: [
+      T('00:00:00','Сергей Ильин','мы','Алло, это Сергей, Infomaximum. Это номер Марины с карточки ООО «Норд»?'),
+      T('00:00:12','Марина Ковалёва','заказчик','Да, слушаю. По карте процесса — когда пришлёте расчёт?')
+    ] },
 
   { id: 'hello', title: 'Добро пожаловать в FlowMeet',
     ts: dayAgo(3, 9, 0), dur: '4 мин 13 с', at: 0, total: '04:13',
     folder: null, src: 'Рабочий стол', custom: [],
-    transcript: [ T('00:00:00','FlowMeet','','Это приветственная запись. Нажмите «Сформировать» на вкладке «Конспект», чтобы увидеть, как из речи получается структурный документ.') ],
+    transcript: [ T('00:00:00','FlowMeet','','Это приветственная запись. После остановки откроется расшифровка. Если карточки нет — укажите её в списке или нажмите «не клиент».') ],
     summary: `
       <h1 class="text-header-1">Добро пожаловать в FlowMeet</h1>
       <h2 class="text-header-2">С чего начать</h2>
       <ul class="text-body-2">
-        <li>Нажмите «Добавить запись» слева — приложение начнёт писать встречу.</li>
-        <li>После остановки появятся две вкладки: расшифровка и конспект.</li>
-        <li>Кнопка «+» рядом с вкладками добавляет свой шаблон разбора.</li>
+        <li>Нажмите запись — приложение начнёт писать встречу.</li>
+        <li>После остановки откроется расшифровка.</li>
+        <li>Не указан ID клиента — укажите ООО «Норд» или нажмите «не клиент».</li>
       </ul>` },
 
   { id: 'mic', title: 'Проверка микрофона',
@@ -478,7 +490,9 @@ const HINTS = {
   sales: [
     { seg: 3, kind: 'Ответ', title: '«Единичные случаи» — отвечайте их же числом',
       body: 'Карта из выгрузки заказчика: 28% заявок уходят на повторную юридическую проверку, средняя потеря — четыре дня.',
-      src: 'Возражения и ответы · отдел продаж' },
+      src: 'Возражения и ответы · отдел продаж',
+      crm: { client: 'ООО «Норд»', step: 'Клиент по календарю',
+        extra: 'Открытой сделки нет. Во время звонка карточку не пишем.' } },
     { seg: 5, kind: 'Ответ', title: 'Данные не покидают контур',
       body: 'Отдельный сервер внутри контура, обновления образом, распознавание речи на стороне заказчика. Сертификат приложить письмом после встречи.',
       src: 'Ответы на требования безопасности' },
@@ -490,7 +504,9 @@ const HINTS = {
     { seg: 9, kind: 'Прайс', title: 'Цена и правила скидок',
       body: '1 200 ₽ за место в месяц при оплате за год. Скидка 10% — от 25 мест, 15% — от 50. Больше 15% — только с согласованием руководителя отдела.',
       note: 'Считаем по пишущим местам: читающие бесплатны.',
-      src: 'Прайс-лист от 01.08.2026' }
+      src: 'Прайс-лист от 01.08.2026',
+      crm: { client: 'Производственный холдинг', step: 'Клиент по календарю',
+        extra: 'Сумму в сделку во время звонка не пишем.' } }
   ],
   support: [
     { seg: 1, kind: 'Ответ', title: 'Срок реакции по обращению',
@@ -516,6 +532,60 @@ const HINTS = {
 };
 const hintsOf = profile => HINTS[profile] || [];
 const hintProfileName = id => (HINT_PROFILES.find(p => p.id === id) || HINT_PROFILES[0]).name;
+
+/* После звонка CRM не экран FlowMeet: видно следствие. kind: 'fm' десктоп, 'm' телефон. */
+function recBannerHtml(f, kind) {
+  if (!f) return '';
+  const warn = kind === 'm' ? 'm-warn m-cap' : 'fm-warn text-caption-2';
+  const k = recListKind(f);
+  const tag = recListTagHtml(f);
+  let title, note;
+  if (f.notClient) {
+    title = t('Не клиент');
+    note = t('В CRM не передаём.');
+  } else if (recHasCard(f)) {
+    title = esc(f.card.name);
+    note = recBindNote(f);
+  } else {
+    title = t('Не указан ID клиента');
+    note = t('Информация не может быть передана в CRM.');
+  }
+  return `<div class="${warn}" style="margin:0 0 var(--size-4x)">
+    ${ic(I.alert, 'fm-i--s')}
+    <span>${tag} <strong>${title}</strong> ${note}</span></div>`;
+}
+const crmBannerHtml = recBannerHtml;
+function recCardActionsHtml(fileId, kind) {
+  const f = FILES.find(x => x.id === fileId);
+  if (!recNeedsCard(f)) return '';
+  if (kind === 'm') {
+    return `<div class="m-rec__acts" style="margin:0 0 var(--size-4x)">
+      <button class="fm-btn fm-btn--primary" data-pickcard="${esc(fileId)}">${t('Указать карточку')}</button>
+      <button class="fm-btn" data-notclient="${esc(fileId)}">${t('Не клиент')}</button>
+    </div>`;
+  }
+  return `<div class="fm-rec__acts" style="margin:0 0 var(--size-4x);width:100%">
+    <button class="fm-btn fm-btn--primary" data-pickcard="${esc(fileId)}">${t('Указать карточку')}</button>
+    <button class="fm-btn" data-notclient="${esc(fileId)}">${t('Не клиент')}</button>
+  </div>`;
+}
+function recPickButtonsHtml(fileId) {
+  return CARDS.map(c => `<button class="fm-btn fm-btn--primary" type="button" data-bindcard="${esc(fileId)}" data-card="${esc(c.id)}">${esc(c.name)}</button>`).join('');
+}
+function crmHintHtml(h, kind) {
+  if (!h || !h.crm) return '';
+  if (!recHasCard({ card: SESSION.recCard })) return '';
+  const cls = kind === 'm' ? 'm-hint__src m-cap' : 'fm-hint__src text-caption-2';
+  return `<p class="${cls}">${ic(I.book, 'fm-i--s')} ${t('Карточка CRM')} · ${esc(h.crm.client)}
+    · ${t(h.crm.step)}${h.crm.extra ? `. ${t(h.crm.extra)}` : ''}.
+    ${t('Факты из CRM в подсказке не приходят.')}</p>`;
+}
+function lostDeviceHtml(kind) {
+  const warn = kind === 'm' ? 'm-warn m-cap' : 'fm-warn text-caption-2';
+  return `<div class="${warn}" style="margin:0 0 var(--size-4x)">
+    ${ic(I.alert, 'fm-i--s')}
+    <span>${t('Если диктофон потеряется, записи с него сможет прослушать кто угодно.')}</span></div>`;
+}
 
 /* ─── КОГДА ПРИХОДИТ ПОДСКАЗКА — ОДНО ПРАВИЛО НА ДВА ПРОТОТИПА ──────────────
    Подсказка выходит СЛЕДОМ ЗА РЕПЛИКОЙ, на которую отвечает (`HINTS[].seg`), а
@@ -551,8 +621,94 @@ const ORG = {
   privateCalls: true,           // приватный звонок разрешён сервером отдельно от режима
   hintProfile: 'sales',         // профиль подсказок задаёт администратор
   diarization: true,            // разделение голосов — подключаемая служба, её можно выключить
-  libraryDays: 90               // доступ телефона к библиотеке — не дольше 90 дней
+  libraryDays: 90,              // доступ телефона к библиотеке — не дольше 90 дней
+  server: true                  // адрес сервера задан организацией; без него запись не стартует
 };
+/* Что продавец видит про сервер: задан ли адрес, какой он, есть ли связь.
+   Не «включено / выключено» и не таблица устройств — этого API не отдаёт. */
+function orgServerView() {
+  return {
+    set: !!ORG.server,
+    addr: LINK.server,
+    live: !!LINK.live
+  };
+}
+const SESSION = { hintsOn: true, recCard: null, recBind: null };
+const CARDS = [
+  { id: 'nord', name: 'ООО «Норд»' }
+];
+const recHasCard = f => !!(f && f.card && f.card.id);
+const recNeedsCard = f => !!(f && !f.notClient && !recHasCard(f));
+function recBindNote(f) {
+  if (f && f.bind === 'phone') return t('Карточка по номеру контакта. Черновик полей — в системе продаж, до «Подтвердить».');
+  if (f && f.bind === 'picked') return t('Карточку указали до записи. Черновик полей — в системе продаж, до «Подтвердить».');
+  if (f && f.bind === 'calendar') return t('Карточка из встречи календаря. Черновик полей — в системе продаж, до «Подтвердить».');
+  return t('Встреча на карточке. Черновик полей — там, до «Подтвердить».');
+}
+function recSessionCardHtml(kind) {
+  const name = SESSION.recCard ? SESSION.recCard.name : null;
+  const line = name
+    ? t('Карточка') + ': ' + name
+    : t('Не указан ID клиента. Без него запись не попадёт в CRM.');
+  const pick = `<button class="fm-btn fm-btn--sm" type="button" data-pickcard="session">${t('Указать карточку')}</button>`;
+  const clear = name
+    ? `<button class="fm-btn fm-btn--sm" type="button" data-clearsessioncard="1">${t('Писать без карточки')}</button>`
+    : '';
+  if (kind === 'm') {
+    return `<div class="m-warn m-cap" style="margin:0 var(--size-5x) var(--size-4x)">
+      <span>${esc(line)}</span>
+      <span style="display:flex;gap:var(--space-m);margin-top:var(--space-m)">${pick}${clear}</span>
+    </div>`;
+  }
+  return `<p class="fm-rec__where text-caption-2" style="margin:var(--size-3x) 0 0;text-align:center">${esc(line)}</p>
+    <div class="fm-rec__acts" style="margin-top:var(--space-m);justify-content:center">${pick}${clear}</div>`;
+}
+function recBindSession(cardId) {
+  const c = CARDS.find(x => x.id === cardId);
+  if (!c) return;
+  SESSION.recCard = { id: c.id, name: c.name };
+  SESSION.recBind = 'picked';
+}
+function recClearSessionCard() {
+  SESSION.recCard = null;
+  SESSION.recBind = null;
+}
+const recListKind = f => {
+  if (!f) return 'sent';
+  if ((f.send || 'sent') === 'queued') return 'queued';
+  if (recNeedsCard(f)) return 'noid';
+  return 'sent';
+};
+function recListTagHtml(f) {
+  const k = recListKind(f);
+  if (k === 'queued') return `<span class="fm-tag fm-tag--orange">${t('ждёт сеть')}</span>`;
+  if (k === 'noid') return `<span class="fm-tag fm-tag--orange">${t('нет ID клиента')}</span>`;
+  return `<span class="fm-tag fm-tag--green">${t('на сервере')}</span>`;
+}
+function recBindCard(fileId, cardId) {
+  if (fileId === 'session') { recBindSession(cardId); return; }
+  const f = FILES.find(x => x.id === fileId);
+  const c = CARDS.find(x => x.id === cardId);
+  if (!f || !c) return;
+  f.card = { id: c.id, name: c.name };
+  f.notClient = false;
+  f.bind = 'picked';
+}
+function recMarkNotClient(fileId) {
+  const f = FILES.find(x => x.id === fileId);
+  if (!f) return;
+  f.card = null;
+  f.notClient = true;
+  f.bind = null;
+}
+function recNewFile(extra) {
+  return Object.assign({
+    send: LINK.live ? 'sent' : 'queued',
+    card: null,
+    notClient: false,
+    bind: null
+  }, extra);
+}
 const isMandatory = () => ORG.mode === 'mandatory';
 /* Причина отказа — одна на оба прототипа: пользователь обязан понимать, почему
    действие недоступно, а не встречать погашенную кнопку молча. */
@@ -560,24 +716,14 @@ const MANDATORY_WHY = 'Организация включила режим «за
 const PRIVATE_WHY = 'Приватный звонок разрешён сервером: запись такого разговора не начинается и на сервер не уходит.';
 
 /* ─── ДИКТОФОНЫ ────────────────────────────────────────────────────────────
-   Продукт направления — устройство, поэтому диктофон в приложении не
-   периферия, а предмет разговора: заряд, свободное место, сколько записей
-   ждёт, на связи ли он вообще. Два семейства — так в описании работы. */
+   Живой контракт устройства с сервером — http-call-recorder (enroll / stream /
+   audio): ключ, пропуск, файл, источник «диктофон». Заряда, объёма флеш и
+   «начать запись на железе» в этом API нет — в карточке их не рисуем.
+   Телефон — хозяин Bluetooth: связь есть или нет. Записи, которые ещё на
+   диктофоне, забираются в общий список. Модели — снимок передачи 26.08. */
 const DEVICES = [
-  /* МОДЕЛИ — ИЗ ПЕРЕДАЧИ ПИМЕНОВА 26.08.2026 (снимок списка диктофонов): продукт
-     подключает диктофоны двух семейств, и это ЧУЖИЕ устройства. Прежние имена
-     «FlowMeet A1/B2» обещали наше изделие, которого нет: своё производство
-     снято решением владельца 18.08.2026, путь — заказ на фабрике. Серийные
-     номера и объём памяти — оттуда же.
-     Прошивка и «семейство» отдельными полями сняты: в первоисточнике их нет, а
-     выдуманная версия прошивки рядом с настоящей моделью — обещание факта,
-     которого мы не знаем. Семейство читается из самого имени модели.
-     keptGb — занято тем, что уже скачано, но с устройства не стёрто; свободное
-     место из него и выводится, а не вписывается числом. */
-  { id: 'a1', name: 'AIREC · 0335', serial: '214112250800335',
-    battery: 100, keptGb: 0, totalGb: 7.8, link: 'bt', clockOk: true },
-  { id: 'b2', name: 'DOWAY · 7197', serial: 'K9THA17197',
-    battery: 12, keptGb: 1.47, totalGb: 64, link: 'off', clockOk: false }
+  { id: 'a1', name: 'AIREC · 0335', serial: '214112250800335', link: 'bt' },
+  { id: 'b2', name: 'DOWAY · 7197', serial: 'K9THA17197', link: 'off' }
 ];
 /* Записи, которые лежат на устройстве и ещё не забраны. Скачивание переносит
    их в общий список записей — то же действие, что «Забрать с диктофона». */
@@ -598,11 +744,6 @@ const devOnline = () => DEVICES.filter(d => d.link !== 'off');
 const MB_PER_MIN = 0.72;
 const mbOf = sec => Math.round(sec * MB_PER_MIN / 60 * 100) / 100;
 const devRecsMb = id => Math.round(devRecs(id).reduce((a, r) => a + mbOf(r.sec), 0) * 100) / 100;
-const devFreeGb = d => Math.max(0, Math.round((d.totalGb - d.keptGb - devRecsMb(d.id) / 1024) * 100) / 100);
-/* Свободное место показывается ИЗ ОБЩЕГО объёма — «7,77 из 7,8 ГБ», как на
-   снимке передачи: одно число не отвечает на вопрос «много это или мало».
-   Владелец строки один на два прототипа. */
-const devSpace = d => num(devFreeGb(d), 2) + ' ' + t('из') + ' ' + num(d.totalGb, d.totalGb % 1 ? 1 : 0);
 
 /* ─── СВЯЗЬ С СЕРВЕРОМ И ОЧЕРЕДЬ ОТПРАВКИ ──────────────────────────────────
    Звук идёт на сервер во время разговора — это носитель подсказок. Не открылось
@@ -615,7 +756,7 @@ const LINK = {
   lastOk: Date.now() - 40e3
 };
 const QUEUE = [
-  { id: 'q1', title: 'Планёрка направления', sec: 1870, state: 'wait' },
+  { id: 'q1', title: 'Разбор обращения · служба поддержки', sec: 581, state: 'wait' },
   { id: 'q2', title: 'Разбор обращения · сеть аптек', sec: 950, state: 'part' }
 ];
 /* Вес очереди — из самих записей очереди, а не отдельное число: иначе очередь
@@ -663,6 +804,9 @@ applyLang();
 /* ─────────────────────── ВЫБОРКИ И ПОИСК ─────────────────────────────────── */
 const alive = () => FILES.filter(f => !f.deleted);
 const srcs = () => [...new Set(alive().map(f => f.src).filter(Boolean))];
+/* Поле src в записи — как в пакете (Ц-3): «Диктофон». В панели это фильтр
+   уже попавших в список, не экран железа, поэтому слово другое. */
+const srcNavLabel = n => n === 'Диктофон' ? 'Записано диктофоном' : n;
 /* Поиск ищет по названию, говорящим и самому тексту — иначе на шестидесяти
    записях он отвечает только на «помню название». Текст конспекта берётся без
    разметки: искать по «text-body-2» никто не собирается. */
@@ -1106,6 +1250,16 @@ dictAdd({
   'Персонализация': 'Personalisation',
   'Свой словарь': 'Custom dictionary',
   'Сервер организации': 'Organisation server',
+  'Куда уходит звук, задаёт администратор. В приложении адрес только показан. Продавец его не выбирает и не выключает.':
+    'Where the sound goes is set by the administrator. The app only shows the address. The seller does not pick it or turn it off.',
+  'Сервер': 'Server',
+  'Задан': 'Set',
+  'Адрес': 'Address',
+  'Связь сейчас': 'Connection now',
+  'Есть': 'Up',
+  'Нет': 'Down',
+  'Если связи нет, запись остаётся на устройстве и уйдёт на этот же адрес, когда связь появится.':
+    'If there is no connection, the recording stays on the device and goes to the same address when the connection returns.',
   'Помощь и поддержка': 'Help and support',
   'Написать в поддержку': 'Contact support',
   'Отзыв о программе': 'Send feedback',
@@ -1772,6 +1926,8 @@ dictAdd({
     'A new recording does not start if the queue holds more than 10 GB or the phone has less than half an hour of recording left. The threshold is not reached.',
   /* диктофоны */
   'Диктофоны': 'Recorders',
+  'Забрать файлы': 'Fetch files',
+  'Записано диктофоном': 'Recorded on a recorder',
   'Новых записей на диктофонах': 'New recordings on the recorders',
   'Диктофон': 'Recorder',
   'Устройства и отправка': 'Devices and outbox',
@@ -1795,6 +1951,9 @@ dictAdd({
   'Остановить прослушивание': 'Stop listening',
   'Начать запись на устройстве': 'Start recording on the device',
   'Новых записей нет — всё забрано.': 'No new recordings — everything has been fetched.',
+  'Новых записей нет.': 'No new recordings.',
+  'Устройство не отвечает.': 'The device is not answering.',
+  'Диктофон не на связи.': 'The recorder is offline.',
   'Устройство не отвечает. Включите его и держите рядом — записи заберём, как только оно ответит.':
     'The device does not answer. Switch it on and keep it close — we will fetch the recordings as soon as it responds.',
   'Диктофон не на связи. Заряд и память показаны последние известные; записи заберём, как только он ответит.':
@@ -2003,8 +2162,8 @@ const PROTO_FEATURES = [
     { t: 'Настройки пространства', on: 1, open: 'scrimSettings' },
     { t: 'Создать пространство команды', on: 0, open: 'scrimTeam' },
     { t: 'Квота и лимиты', on: 0, go: 'membership' },
-    { t: 'Написать в поддержку', on: 1, open: 'scrimSettings', setpane: 'support' },
-    { t: 'Отзыв о программе', on: 1, open: 'scrimSettings', setpane: 'feedback' },
+    { t: 'Написать в поддержку', on: 0, open: 'scrimSettings', setpane: 'support' },
+    { t: 'Отзыв о программе', on: 0, open: 'scrimSettings', setpane: 'feedback' },
     { t: 'Скачать приложение', on: 0, open: 'scrimExplore', exppane: 'apps' },
     { t: 'Выйти', on: 1, logout: 1 }
   ]},
@@ -2015,7 +2174,8 @@ const PROTO_FEATURES = [
     { t: 'Шаблоны', on: 0, go: 'templates' },
     { t: 'Возможности', on: 0, open: 'scrimExplore' },
     { t: 'Диктофоны', on: 1, go: 'devices' },
-    { t: 'Отправка на сервер', on: 1, go: 'outbox' }
+    { t: 'Записи на потерянном устройстве', on: 0, go: 'devices' },
+    { t: 'Отправка на сервер', on: 0, go: 'outbox' }
   ]},
   { h: 'Записи и папки', rows: [
     { t: 'Список записей', on: 1, scope: 'all' },
@@ -2027,10 +2187,12 @@ const PROTO_FEATURES = [
   { h: 'Запись встречи', rows: [
     { t: 'Запись и виджет у часов', on: 1, view: 'tray' },
     { t: 'Живые подсказки', on: 1, view: 'tray' },
+    { t: 'Подсказка из карточки CRM', on: 1, view: 'tray' },
     { t: 'Отметки в записи', on: 0, view: 'tray' }
   ]},
   { h: 'Открытая запись', rows: [
     { t: 'Расшифровка', on: 1, go: 'note', tab: 'transcript' },
+    { t: 'После звонка: указать карточку', on: 1, go: 'note', tab: 'transcript' },
     { t: 'Конспект', on: 0, go: 'note', tab: 'summary' },
     { t: 'Вкладки по шаблону', on: 0, go: 'note', tab: 'summary' },
     { t: 'Поделиться', on: 0, go: 'note' },
@@ -2041,7 +2203,9 @@ const PROTO_FEATURES = [
     { t: 'Параметры приложения', on: 1, view: 'prefs' },
     { t: 'Сервер организации', on: 1, view: 'prefs', prefs: 'cloud' },
     { t: 'Режим организации', on: 1, view: 'prefs', prefs: 'org' },
-    { t: 'Свой словарь', on: 0, open: 'scrimSettings', setpane: 'vocab' }
+    { t: 'Свой словарь', on: 0, open: 'scrimSettings', setpane: 'vocab' },
+    { t: 'Персонализация и память', on: 0, open: 'scrimSettings', setpane: 'person' },
+    { t: 'Язык распознавания и автоподпись', on: 0, open: 'scrimSettings', setpane: 'prefs' }
   ]}
 ];
 
@@ -2079,12 +2243,89 @@ dictAdd({
   'Открытая запись': 'Open recording',
   'Настройки пространства': 'Space settings',
   'Поиск по названию, говорящим и тексту': 'Search by title, speakers and transcript',
-  'Отправка на сервер': 'Upload queue',
+  'Записи на потерянном устройстве': 'Recordings on a lost device',
   'Список записей': 'Recording list',
   'Создание папок': 'Create folders',
   'Добавить запись': 'Add recording',
   'Запись и виджет у часов': 'Recording and tray widget',
   'Живые подсказки': 'Live hints',
+  'Подсказка из карточки CRM': 'Hint from CRM card',
+  'После звонка: клиент в CRM': 'After call: CRM client',
+  'После звонка: указать карточку': 'After the call: pick a card',
+  'Сервер организации задан': 'Organisation server is set',
+  'Выберите карточку': 'Pick a card',
+  'очередь': 'queued',
+  'ждёт сеть': 'waiting for network',
+  'нет id': 'no client ID',
+  'нет ID клиента': 'no client ID',
+  'ушла': 'sent',
+  'на сервере': 'on the server',
+  'Не клиент': 'Not a client',
+  'В систему продаж не кладём.': 'It is not sent to CRM.',
+  'В CRM не передаём.': 'It is not sent to CRM.',
+  'Очередь загрузки': 'Upload queue',
+  'Ждут загрузки на сервер компании': 'Waiting to upload to the company server',
+  'Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.':
+    'These recordings are waiting to upload to the company server. They must first be moved to the phone — then the upload starts.',
+  'Если диктофон потеряется, записи с него сможет прослушать кто угодно.':
+    'If the recorder is lost, anyone can listen to the recordings on it.',
+  'Факты из CRM в подсказке не приходят.': 'CRM facts do not arrive in the hint.',
+  'Не указан ID клиента': 'Client ID is not set',
+  'Не указан ID клиента. Без него запись не попадёт в CRM.':
+    'Client ID is not set. Without it the recording cannot go to CRM.',
+  'Информация не может быть передана в CRM.': 'The information cannot be sent to CRM.',
+  'Встреча на карточке. Черновик полей — там, до «Подтвердить».':
+    'The meeting is on the card. Field drafts stay there until Confirm.',
+  'Карточка из встречи календаря. Черновик полей — в системе продаж, до «Подтвердить».':
+    'Card from the calendar meeting. Field drafts stay in sales until Confirm.',
+  'Карточка по номеру контакта. Черновик полей — в системе продаж, до «Подтвердить».':
+    'Card from the contact phone number. Field drafts stay in sales until Confirm.',
+  'Карточку указали до записи. Черновик полей — в системе продаж, до «Подтвердить».':
+    'The card was picked before recording. Field drafts stay in sales until Confirm.',
+  'Карточка не указана — после стопа будет «нет id».':
+    'Client ID is not set. Without it the recording cannot go to CRM.',
+  'Карточка': 'Card',
+  'Писать без карточки': 'Record without a card',
+  'Нет id карточки': 'Client ID is not set',
+  'Дыра Ц-1: в API приёма нет id карточки и «не клиент». Цель не закрыта.':
+    'Gap C-1: ingest API has no card id and no “not a client”. The goal is open.',
+  'Дыра Ц-5: снимка полей сделки в API нет.':
+    'Gap C-5: there is no deal-field snapshot in the API.',
+  'Дыра Ц-2: защиты на диктофоне нет. В поставке сказать прямо, шифрование не обещать.':
+    'Gap C-2: the recorder has no protection. Say so as a fact. Device encryption is a future client-shipment condition, not a current capability.',
+  'Дыра Ц-2 / Ц-3: забрать файл по Bluetooth в API приёма нет. Enroll начинается, когда файл уже на телефоне.':
+    'Gap C-2 / C-3: fetching a file over Bluetooth is not in the ingest API. Enroll starts after the file is already on the phone.',
+  'В продажи не уйдёт, пока не укажете карточку.':
+    'It will not go to sales until you pick a card.',
+  'Указать карточку': 'Pick a card',
+  'сервер организации не задан': 'organisation server is not set',
+  'Сервер организации не задан. Запись не начинается.':
+    'The organisation server is not set. Recording does not start.',
+  'Подсказки включены': 'Hints on',
+  'Выкл': 'Off',
+  'Вкл': 'On',
+  'Подсказки выключены — запись идёт.': 'Hints are off — recording continues.',
+  'Живых подсказок нет': 'No live hints',
+  'клиент не привязан': 'client not linked',
+  'После звонка: текст есть, карточки клиента нет': 'After the call: transcript ready, no client card',
+  'Во время разговора CRM не заполняется.': 'CRM is not filled during the call.',
+  'Уточнить клиента': 'Confirm the client',
+  'Текст готов. На стенде клиент и сделка пустые — в карточку молча не пишем.':
+    'Transcript is ready. Client and deal are empty on the stand — do not write the card silently.',
+  'Текст есть. Клиент не сопоставлен.': 'Transcript exists. Client is not matched.',
+  'Внутренняя планёрка — в CRM продаж не кладём.': 'Internal standup — not a sales CRM record.',
+  'Карточка CRM': 'CRM card',
+  'Клиент по календарю': 'Client from calendar',
+  'Открытой сделки нет. Во время звонка карточку не пишем.':
+    'No open deal. Do not write the card during the call.',
+  'Сумму в сделку во время звонка не пишем.': 'Do not write the amount into the deal during the call.',
+  'Записи на потерянном устройстве не защищены: их снимет любой, кто знает протокол. Защиты на самом диктофоне нет.':
+    'Recordings on a lost device are unprotected: anyone who knows the protocol can take them. No protection on the dictaphone itself.',
+  'Диктофон к компьютеру не подключается — его берёт телефон. Здесь то, что уже забрали.':
+    'The dictaphone does not pair to the computer — the phone does. This list is what was already pulled.',
+  'ноутбук не нужен': 'laptop not needed',
+  'Источник': 'Source',
+  'Источник — микрофон телефона': 'Source — phone microphone',
   'Отметки в записи': 'In-recording marks',
   'Вкладки по шаблону': 'Template tabs',
   'Обрезка аудио': 'Trim audio',

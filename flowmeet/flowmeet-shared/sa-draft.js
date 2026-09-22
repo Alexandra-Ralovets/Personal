@@ -1,39 +1,6 @@
-/* Черновик постановки FlowMeet для разработки. Владелец один на десктопную
-   вкладку «Постановка»: иначе текст разъедется с макетом.
-   Статусы сценариев:
-     done  — есть в живом клиенте/сервере по передаче Пименова 26.08.2026
-             (независимого прогона у нас не было)
-     part  — описано и частично работает: не все ОС, не все шаги, не проверено
-     none  — в продукте нет (в макете может быть)
-   Пилот на отделе продаж в этот черновик не входит. */
+/* Постановка FlowMeet — вкладка «Постановка» в десктопном прототипе.
+   Ц-1 здесь; Ц-2…Ц-5 — sa-c25.js. Требования в git: Требования/ */
 
-function saSt(kind) {
-  if (kind === 'done') return '<span class="fm-tag fm-tag--green">реализовано</span>';
-  if (kind === 'part') return '<span class="fm-tag fm-tag--orange">частично</span>';
-  return '<span class="fm-tag fm-tag--red">нет</span>';
-}
-function saUc(id, title, kind, body, href) {
-  const link = href
-    ? `<a class="fm-btn fm-btn--sm" href="${href}">Макет</a>`
-    : '';
-  return `<section class="fm-uc" id="${id}">
-    <div class="fm-uc__head">
-      <span class="text-caption-2">${id}</span>
-      <h3 class="text-subheader-1" style="margin:0;flex:1 1 auto">${title}</h3>
-      ${saSt(kind)}${link}
-    </div>
-    <div class="text-body-3">${body}</div>
-  </section>`;
-}
-
-function saBpmnDefs() {
-  return `<defs>
-    <marker id="fmArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-      <path d="M0 0 L8 4 L0 8 z" fill="var(--text-primary)"/></marker>
-    <marker id="fmArrMsg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-      <path d="M0 0 L8 4 L0 8 z" fill="var(--text-complimentary)"/></marker>
-  </defs>`;
-}
 function saTask(x, y, w, h, lines) {
   const t = lines.map((s, i) =>
     `<text class="fm-bpmn-t" x="${x + w / 2}" y="${y + 18 + i * 14}" text-anchor="middle">${s}</text>`).join('');
@@ -51,313 +18,355 @@ function saEnd(x, y, cap) {
   return `<circle class="fm-bpmn-end" cx="${x}" cy="${y}" r="11"/>
     <text class="fm-bpmn-cap" x="${x}" y="${y + 26}" text-anchor="middle">${cap}</text>`;
 }
+function saBpmnDefs() {
+  return `<defs>
+    <marker id="fmArr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--text-primary)"/></marker>
+    <marker id="fmArrMsg" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0 L8 4 L0 8 z" fill="var(--text-complimentary)"/></marker>
+  </defs>`;
+}
 
-function saBpmnP1() {
-  /* Сотрудник 40–150, клиент 150–310, регистратор 310–460 */
-  return `<svg class="fm-bpmn" viewBox="0 0 1080 480" role="img" aria-label="BPMN: во время разговора">
-    <rect class="fm-bpmn-lane" x="0" y="28" width="1080" height="122"/>
-    <rect class="fm-bpmn-lane" x="0" y="150" width="1080" height="160"/>
-    <rect class="fm-bpmn-lane" x="0" y="310" width="1080" height="150"/>
-    <line class="fm-bpmn-seq" x1="48" y1="28" x2="48" y2="460"/>
-    <text class="fm-bpmn-lt" x="24" y="100" text-anchor="middle" transform="rotate(-90 24 100)">Сотрудник</text>
-    <text class="fm-bpmn-lt" x="24" y="230" text-anchor="middle" transform="rotate(-90 24 230)">FlowMeet</text>
-    <text class="fm-bpmn-lt" x="24" y="390" text-anchor="middle" transform="rotate(-90 24 390)">Регистратор</text>
-    <text class="fm-bpmn-lt" x="8" y="20">P1 · во время разговора</text>
+function saLanes(title, a, b, c) {
+  return `<rect class="fm-bpmn-lane" x="0" y="28" width="1080" height="130"/>
+    <rect class="fm-bpmn-lane" x="0" y="158" width="1080" height="160"/>
+    <rect class="fm-bpmn-lane" x="0" y="318" width="1080" height="150"/>
+    <line class="fm-bpmn-seq" x1="48" y1="28" x2="48" y2="468"/>
+    <text class="fm-bpmn-lt" x="24" y="95" text-anchor="middle" transform="rotate(-90 24 95)">${a}</text>
+    <text class="fm-bpmn-lt" x="24" y="238" text-anchor="middle" transform="rotate(-90 24 238)">${b}</text>
+    <text class="fm-bpmn-lt" x="24" y="395" text-anchor="middle" transform="rotate(-90 24 395)">${c}</text>
+    <text class="fm-bpmn-lt" x="8" y="20">${title}</text>`;
+}
 
-    ${saTask(70, 62, 120, 52, ['Смотрит плашку', 'пауза / отмена / стоп'])}
-    ${saTask(430, 62, 130, 52, ['«Это не встреча»', 'до ухода на сервер'])}
-    ${saTask(780, 62, 120, 52, ['Читает подсказку', 'в FlowMeet'])}
+function saBpmnC1() {
+  return `<svg class="fm-bpmn" id="fm-bpmn-c1" viewBox="0 0 1080 500" role="img" aria-label="Ц-1 после разговора">
+    ${saLanes('Ц-1. После разговора. Без id карточки в продажи не кладём.', 'FlowMeet', 'Система продаж', 'Продавец')}
+    ${saStart(80, 90, 'разговор кончился')}
+    ${saTask(125, 66, 150, 48, ['Запись ушла', 'на сервер компании'])}
+    ${saGw(300, 72, 'id карточки уже есть?')}
 
-    ${saStart(92, 230, 'кнопка / микрофон')}
-    ${saGw(150, 212, 'место?')}
-    ${saTask(220, 206, 110, 48, ['Пишет локально'])}
-    ${saGw(360, 212, 'stream?')}
-    ${saTask(430, 206, 120, 48, ['Кадры own/others', 'на stream'])}
-    ${saTask(580, 206, 120, 48, ['Показать hint', 'применить policy'])}
-    ${saGw(730, 212, 'чем кончить?')}
-    ${saTask(800, 188, 100, 40, ['Стоп: файл', '+ checksum'])}
-    ${saTask(800, 248, 100, 40, ['Отмена:', 'удалить файл'])}
-    ${saEnd(980, 208, 'к P2')}
-    ${saEnd(980, 268, 'не слать')}
-    ${saEnd(200, 168, 'отказ')}
+    ${saTask(400, 190, 170, 48, ['Встреча на карточке', 'в «Встречах и звонках»'])}
+    ${saTask(610, 190, 180, 48, ['Черновик: кто решает,', 'что сказали, что пообещали'])}
+    ${saEnd(1040, 214, 'руководитель видит встречу')}
 
-    ${saTask(430, 350, 130, 48, ['enroll + stream', 'session_id'])}
-    ${saTask(580, 350, 140, 48, ['STT, hint, policy', 'журнал мс'])}
-    ${saTask(800, 350, 120, 48, ['Принять файл', 'после стопа'])}
+    ${saGw(300, 330, 'это клиент?')}
+    ${saTask(400, 348, 170, 48, ['Указать карточку'])}
+    ${saTask(610, 348, 180, 48, ['Подтвердить, поправить', 'или отправить переделать'])}
+    ${saEnd(1040, 372, 'в карточку не кладём')}
 
-    <path class="fm-bpmn-seq" d="M103 230 H150"/>
-    <path class="fm-bpmn-seq" d="M186 230 H220"/>
-    <path class="fm-bpmn-seq" d="M330 230 H360"/>
-    <path class="fm-bpmn-seq" d="M396 230 H430"/>
-    <path class="fm-bpmn-seq" d="M550 230 H580"/>
-    <path class="fm-bpmn-seq" d="M700 230 H730"/>
-    <path class="fm-bpmn-seq" d="M748 230 H800"/>
-    <path class="fm-bpmn-seq" d="M748 230 V268 H800"/>
-    <path class="fm-bpmn-seq" d="M900 208 H969"/>
-    <path class="fm-bpmn-seq" d="M900 268 H969"/>
-    <path class="fm-bpmn-seq" d="M168 212 V168"/>
-    <text class="fm-bpmn-cap" x="200" y="200">нет</text>
-    <text class="fm-bpmn-cap" x="400" y="200">да</text>
-    <text class="fm-bpmn-cap" x="400" y="258">нет → очередь</text>
-    <text class="fm-bpmn-cap" x="760" y="200">стоп</text>
-    <text class="fm-bpmn-cap" x="770" y="290">отмена</text>
-    <path class="fm-bpmn-msg" d="M490 254 V350"/>
-    <path class="fm-bpmn-msg" d="M640 254 V350"/>
-    <path class="fm-bpmn-msg" d="M850 228 V350"/>
-    <path class="fm-bpmn-msg" d="M130 88 V206"/>
-    <path class="fm-bpmn-msg" d="M640 88 V206"/>
-    <path class="fm-bpmn-msg" d="M495 114 V206"/>
+    <path class="fm-bpmn-seq" d="M91 90 H125"/>
+    <path class="fm-bpmn-seq" d="M275 90 H300"/>
+    <path class="fm-bpmn-seq" d="M336 90 V214 H400"/>
+    <text class="fm-bpmn-cap" x="455" y="182">да · календарь, телефон, выбрали</text>
+    <path class="fm-bpmn-seq" d="M318 108 V330"/>
+    <text class="fm-bpmn-cap" x="268" y="220">нет</text>
+    <path class="fm-bpmn-seq" d="M336 348 H400"/>
+    <text class="fm-bpmn-cap" x="368" y="338">да</text>
+    <path class="fm-bpmn-seq" d="M318 366 V430 H1040 V383"/>
+    <text class="fm-bpmn-cap" x="700" y="422">нет · планёрка, найм</text>
+    <path class="fm-bpmn-msg" d="M485 348 V238"/>
+    <path class="fm-bpmn-seq" d="M570 214 H610"/>
+    <path class="fm-bpmn-seq" d="M790 214 H1029"/>
+    <path class="fm-bpmn-msg" d="M700 238 V348"/>
+    <path class="fm-bpmn-seq" d="M790 372 H960 V225 H1040"/>
   </svg>`;
 }
 
-function saBpmnP2() {
-  return `<svg class="fm-bpmn" viewBox="0 0 1080 460" role="img" aria-label="BPMN: после звонка">
-    <rect class="fm-bpmn-lane" x="0" y="28" width="1080" height="130"/>
-    <rect class="fm-bpmn-lane" x="0" y="158" width="1080" height="150"/>
-    <rect class="fm-bpmn-lane" x="0" y="308" width="1080" height="140"/>
-    <line class="fm-bpmn-seq" x1="48" y1="28" x2="48" y2="448"/>
-    <text class="fm-bpmn-lt" x="24" y="95" text-anchor="middle" transform="rotate(-90 24 95)">Регистратор</text>
-    <text class="fm-bpmn-lt" x="24" y="233" text-anchor="middle" transform="rotate(-90 24 233)">Конвейер</text>
-    <text class="fm-bpmn-lt" x="24" y="380" text-anchor="middle" transform="rotate(-90 24 380)">Сотрудник</text>
-    <text class="fm-bpmn-lt" x="8" y="20">P2 · после звонка (во время звонка CRM не писать)</text>
+function saBpmnC2() {
+  return `<svg class="fm-bpmn" id="fm-bpmn-c2" viewBox="0 0 1080 500" role="img" aria-label="Ц-2 контур">
+    ${saLanes('Ц-2. Запись остаётся на сервере компании, не в чужом облаке.', 'FlowMeet', 'Сервер компании', 'Сотрудник')}
+    ${saStart(80, 90, 'разговор кончился')}
+    ${saGw(150, 72, 'связь есть?')}
+    ${saTask(250, 66, 140, 48, ['Очередь', 'на устройстве'])}
+    ${saTask(450, 66, 160, 48, ['Отправить', 'на сервер компании'])}
+    ${saTask(650, 66, 170, 48, ['Нет кнопки', '«отправить в облако»'])}
 
-    ${saStart(90, 90, 'файл + checksum')}
-    ${saTask(140, 66, 120, 48, ['Сохранить', 'две дорожки'])}
-    ${saTask(290, 66, 120, 48, ['Транскрипт', 'ch на сегменте'])}
-    ${saGw(450, 72, 'готов?')}
-    ${saTask(530, 66, 140, 48, ['Ключ id+sha256', 'не второй прогон'])}
-    ${saEnd(980, 90, 'ждём')}
+    ${saTask(450, 190, 170, 48, ['Принять, расшифровать,', 'хранить в контуре'])}
+    ${saEnd(1040, 214, 'архив в периметре, не в облаке')}
 
-    ${saTask(140, 200, 130, 48, ['12 шагов', 'как у других'])}
-    ${saGw(310, 206, 'клиент есть?')}
-    ${saTask(390, 182, 120, 40, ['Привязать', 'клиент / сделка'])}
-    ${saTask(390, 238, 120, 40, ['Inbox:', 'уточнить клиента'])}
-    ${saGw(550, 206, 'уверенность?')}
-    ${saTask(640, 182, 110, 40, ['В карточку', 'сильные поля'])}
-    ${saTask(640, 238, 110, 40, ['В inbox', 'мягкие поля'])}
-    ${saEnd(860, 202, 'конец')}
-
-    ${saTask(390, 348, 140, 48, ['Подтвердить inbox', 'клиента и поля'])}
-    ${saTask(640, 348, 140, 48, ['Админ: revoke', 'следующий запрос 403'])}
-
-    <path class="fm-bpmn-seq" d="M101 90 H140"/>
-    <path class="fm-bpmn-seq" d="M260 90 H290"/>
-    <path class="fm-bpmn-seq" d="M410 90 H450"/>
-    <path class="fm-bpmn-seq" d="M486 90 H530"/>
-    <path class="fm-bpmn-seq" d="M468 72 V48 H980"/>
-    <text class="fm-bpmn-cap" x="700" y="44">нет — ждать</text>
-    <path class="fm-bpmn-msg" d="M600 114 C600 170 205 170 205 200"/>
-    <path class="fm-bpmn-seq" d="M270 224 H310"/>
-    <path class="fm-bpmn-seq" d="M346 224 H390"/>
-    <path class="fm-bpmn-seq" d="M328 224 V258 H390"/>
-    <path class="fm-bpmn-seq" d="M510 202 H550"/>
-    <path class="fm-bpmn-seq" d="M510 258 H550"/>
-    <path class="fm-bpmn-seq" d="M586 224 H640"/>
-    <path class="fm-bpmn-seq" d="M568 224 V258 H640"/>
-    <path class="fm-bpmn-seq" d="M750 202 H849"/>
-    <path class="fm-bpmn-seq" d="M750 258 H820 V202"/>
-    <text class="fm-bpmn-cap" x="360" y="198">да</text>
-    <text class="fm-bpmn-cap" x="360" y="280">нет</text>
-    <text class="fm-bpmn-cap" x="600" y="198">высокая</text>
-    <text class="fm-bpmn-cap" x="595" y="280">ниже планки</text>
-    <path class="fm-bpmn-msg" d="M450 278 V348"/>
-    <path class="fm-bpmn-msg" d="M695 278 V348"/>
+    <path class="fm-bpmn-seq" d="M91 90 H150"/>
+    <path class="fm-bpmn-seq" d="M186 90 H250"/>
+    <text class="fm-bpmn-cap" x="218" y="80">нет</text>
+    <path class="fm-bpmn-seq" d="M168 72 V48 H530 V66"/>
+    <text class="fm-bpmn-cap" x="360" y="44">да</text>
+    <path class="fm-bpmn-seq" d="M390 90 H450"/>
+    <path class="fm-bpmn-seq" d="M530 114 V190"/>
+    <path class="fm-bpmn-seq" d="M620 214 H1029"/>
   </svg>`;
+}
+
+function saBpmnC3() {
+  return `<svg class="fm-bpmn" id="fm-bpmn-c3" viewBox="0 0 1080 500" role="img" aria-label="Ц-3 картина по клиенту">
+    ${saLanes('Ц-3. Онлайн, переговорная и телефон — на одну карточку предприятия.', 'FlowMeet', 'Система продаж', 'Новый продавец')}
+    ${saStart(80, 90, 'разговор')}
+    ${saGw(155, 72, 'с клиентом?')}
+    ${saTask(270, 48, 130, 40, ['Компьютер', 'онлайн'])}
+    ${saTask(270, 96, 130, 40, ['Диктофон', 'или телефон'])}
+    ${saEnd(1040, 90, 'не в карточку клиента')}
+
+    ${saTask(470, 190, 190, 48, ['Та же карточка ООО «Норд»', 'канал «Встречи и звонки»'])}
+    ${saEnd(1040, 214, 'картина у предприятия')}
+
+    ${saTask(470, 348, 190, 48, ['Открыл карточку', 'без телефона прежнего'])}
+
+    <path class="fm-bpmn-seq" d="M91 90 H155"/>
+    <path class="fm-bpmn-seq" d="M173 72 V36 H1029"/>
+    <text class="fm-bpmn-cap" x="700" y="32">нет</text>
+    <path class="fm-bpmn-seq" d="M191 90 V68 H270"/>
+    <path class="fm-bpmn-seq" d="M191 90 V116 H270"/>
+    <text class="fm-bpmn-cap" x="230" y="56">да</text>
+    <path class="fm-bpmn-seq" d="M400 68 H440 V214 H470"/>
+    <path class="fm-bpmn-seq" d="M400 116 H440 V214 H470"/>
+    <path class="fm-bpmn-seq" d="M660 214 H1029"/>
+    <path class="fm-bpmn-msg" d="M565 238 V348"/>
+  </svg>`;
+}
+
+function saBpmnC4() {
+  return `<svg class="fm-bpmn" id="fm-bpmn-c4" viewBox="0 0 1080 500" role="img" aria-label="Ц-4 касания">
+    ${saLanes('Ц-4. Счёт касаний в системе продаж, не в приложении часов.', 'FlowMeet', 'Система продаж', 'Руководитель')}
+    ${saStart(80, 90, 'запись ушла')}
+    ${saGw(165, 72, 'клиентский разговор?')}
+    ${saEnd(1040, 90, 'не считаем')}
+
+    ${saGw(165, 206, 'уже считали этот файл?')}
+    ${saTask(320, 190, 150, 48, ['+1 касание', 'дата в канале'])}
+    ${saTask(520, 190, 160, 48, ['Этап сделки', 'не двигать'])}
+    ${saEnd(1040, 214, 'не второй счётчик')}
+
+    ${saTask(320, 348, 170, 48, ['Видит число встреч', 'и дни между ними'])}
+
+    <path class="fm-bpmn-seq" d="M91 90 H165"/>
+    <path class="fm-bpmn-seq" d="M201 90 H1029"/>
+    <text class="fm-bpmn-cap" x="500" y="80">нет · планёрка</text>
+    <path class="fm-bpmn-seq" d="M183 108 V206"/>
+    <text class="fm-bpmn-cap" x="155" y="155">да</text>
+    <path class="fm-bpmn-seq" d="M201 224 V170 H1040 V203"/>
+    <text class="fm-bpmn-cap" x="720" y="162">да · тот же файл</text>
+    <path class="fm-bpmn-seq" d="M201 224 H320"/>
+    <text class="fm-bpmn-cap" x="250" y="244">нет · новое касание</text>
+    <path class="fm-bpmn-seq" d="M470 214 H520"/>
+    <path class="fm-bpmn-seq" d="M680 214 H1029"/>
+    <path class="fm-bpmn-msg" d="M395 238 V348"/>
+  </svg>`;
+}
+
+function saBpmnC5() {
+  return `<svg class="fm-bpmn" id="fm-bpmn-c5" viewBox="0 0 1080 500" role="img" aria-label="Ц-5 подсказка">
+    ${saLanes('Ц-5. Подсказка в FlowMeet, пока идёт разговор. В карточку не пишем.', 'FlowMeet', 'Сервер / карточка', 'Сотрудник')}
+    ${saStart(80, 90, 'запись идёт')}
+    ${saGw(165, 72, 'подсказки включены?')}
+    ${saGw(320, 72, 'связь есть?')}
+    ${saTask(430, 66, 150, 48, ['Карточка подсказки', 'в FlowMeet'])}
+    ${saEnd(1040, 90, 'пишет без карточек')}
+
+    ${saTask(300, 190, 150, 48, ['Честно: живых', 'подсказок нет'])}
+    ${saEnd(510, 214, 'без живых подсказок')}
+    ${saGw(630, 206, 'клиент опознан?')}
+    ${saTask(700, 168, 150, 40, ['Факты карточки', 'только чтение'])}
+    ${saTask(700, 228, 150, 40, ['Профиль,', 'не чужая карточка'])}
+    ${saEnd(1040, 214, 'в CRM не писали')}
+
+    ${saTask(70, 348, 150, 48, ['Включил', 'подсказки сам'])}
+    ${saTask(430, 348, 150, 48, ['Читает карточку', 'не уходит выяснять'])}
+
+    <path class="fm-bpmn-seq" d="M91 90 H165"/>
+    <path class="fm-bpmn-seq" d="M183 72 V36 H1029"/>
+    <text class="fm-bpmn-cap" x="700" y="32">нет</text>
+    <path class="fm-bpmn-seq" d="M201 90 H320"/>
+    <text class="fm-bpmn-cap" x="250" y="80">да</text>
+    <path class="fm-bpmn-seq" d="M356 90 H430"/>
+    <text class="fm-bpmn-cap" x="390" y="80">да</text>
+    <path class="fm-bpmn-seq" d="M338 108 V190"/>
+    <text class="fm-bpmn-cap" x="310" y="155">нет</text>
+    <path class="fm-bpmn-seq" d="M450 214 H499"/>
+    <path class="fm-bpmn-msg" d="M580 114 V224 H630"/>
+    <path class="fm-bpmn-seq" d="M666 224 V188 H700"/>
+    <text class="fm-bpmn-cap" x="680" y="180">да</text>
+    <path class="fm-bpmn-seq" d="M666 224 V248 H700"/>
+    <text class="fm-bpmn-cap" x="680" y="268">нет</text>
+    <path class="fm-bpmn-seq" d="M850 188 H1040 V203"/>
+    <path class="fm-bpmn-seq" d="M850 248 H1040 V225"/>
+    <path class="fm-bpmn-msg" d="M145 348 H183 V108"/>
+    <path class="fm-bpmn-msg" d="M505 114 V348"/>
+  </svg>`;
+}
+
+function saStatusHtml() {
+  return `
+<h2 class="text-header-2" id="sa-status">Состояние · 22.09.2026</h2>
+<p class="text-body-2">Два канона: сценарии в <code>Требования/</code> и приём звука <code>enroll</code> / <code>stream</code> / <code>audio</code>. Если сценарий просит шаг, а в API его нет — это доработка API, цель не выкидываем. Если сценарий не просит — с живого экрана снимаем.</p>
+
+<p class="text-subheader-1" style="margin:var(--size-4x) 0 var(--space-s)">Сделано в прототипе. В API записи есть.</p>
+<ul class="text-body-3">
+  <li>Писать и остановить. Звук уходит на сервер организации.</li>
+  <li>Подсказка во время разговора — событие на том же канале, что звук. Пустого события нет — карточки нет.</li>
+  <li>Сервер задан или нет, адрес, есть ли связь. Продавец адрес не выбирает.</li>
+  <li>Откуда звук: компьютер, телефон, диктофон — в пакете.</li>
+  <li>Список записей, папки, корзина, расшифровка, выгрузка текста — на клиенте.</li>
+  <li>Нет чужого облака. Нет кнопки «отправить вендору».</li>
+  <li>Живой поток AIREC на стенде разработчик подтвердил. Независимого сквозного прогона с физическим диктофоном нет.</li>
+</ul>
+
+<p class="text-subheader-1" style="margin:var(--size-4x) 0 var(--space-s)">Задачи на бэкенд. Три разные команды, не один список «дыр».</p>
+<table class="text-body-3" style="width:100%;border-collapse:collapse;margin:0 0 var(--size-4x)">
+  <thead><tr>
+    <th style="text-align:left;padding:var(--space-s);border-bottom:1px solid var(--line-border)">Кому</th>
+    <th style="text-align:left;padding:var(--space-s);border-bottom:1px solid var(--line-border)">Задача</th>
+    <th style="text-align:left;padding:var(--space-s);border-bottom:1px solid var(--line-border)">Готово, когда</th>
+  </tr></thead>
+  <tbody>
+    <tr><td style="padding:var(--space-s);vertical-align:top">Приём звука<br><code>enroll</code> / <code>stream</code> / <code>audio</code></td>
+      <td style="padding:var(--space-s)">Принять вместе с файлом три вещи, которых в контракте нет: откуда карточка (календарь, номер, выбрали, нет); id карточки, если уже есть; отметку «не клиент». Имена в проводе — как у приёмника, новые URL не выдумывать. Файл без id принять. В продажи без id не отдавать.</td>
+      <td style="padding:var(--space-s)">Планёрка не создаёт задачу. «Не клиент» не едет в продажи. Карточка есть — пакет можно отдать дальше.</td></tr>
+    <tr><td style="padding:var(--space-s);vertical-align:top">Система продаж<br>не клиент записи</td>
+      <td style="padding:var(--space-s)">Принять событие только с id карточки. На этой карточке в канале «Встречи и звонки» появляется встреча или звонок. Компанию и сделку не создавать. Из текста с ролями — черновик полей до кнопки «Подтвердить». Каждое такое событие — касание в счёте.</td>
+      <td style="padding:var(--space-s)">Руководитель открывает ООО «Норд» и видит встречу, черновик и число касаний. Этап сделки сам не закрывается.</td></tr>
+    <tr><td style="padding:var(--space-s);vertical-align:top">Сервер подсказок<br>то же соединение, что звук</td>
+      <td style="padding:var(--space-s)">Если id карточки уже есть — прочитать карточку только на чтение (открытая сделка, последний шаг) и прислать это в событии подсказки. Писать в карточку с подсказки нельзя. Нет id — факты карточки не слать, запись не стопать. Канал события уже есть.</td>
+      <td style="padding:var(--space-s)">На экране во время звонка видны факты из карточки, не выдумка. После звонка карточка не изменилась.</td></tr>
+    <tr><td style="padding:var(--space-s);vertical-align:top">Не этот бэкенд</td>
+      <td style="padding:var(--space-s)">Список файлов на диктофоне и скачать по Bluetooth — телефон и железо, не <code>enroll</code>. На приём звука задачу не ставить: enroll начинается, когда файл уже на телефоне. Защиты на потерянном диктофоне нет — на экране сказать прямо. Шифрование устройства — целевое условие будущей клиентской поставки, не текущая возможность.</td>
+      <td style="padding:var(--space-s)">Очная запись доезжает тем же приёмом, что с компьютера. Защиту как существующую не обещают. Шифрование числится условием будущей поставки, не фактом стенда.</td></tr>
+  </tbody>
+</table>
+
+<p class="text-subheader-1" style="margin:var(--size-4x) 0 var(--space-s)">Сценарий не просит. С живого экрана снято.</p>
+<p class="text-body-3">Персонализация, память, «как разбирать», язык распознавания, автоподпись, словарь, отдельный экран «Отправка», чат поддержки, отзыв, справочник, квота, шаблоны, «Спросить ИИ», конспект вместо живой подсказки, отметки, снимок в заметку, заряд и гигабайты флеш, «слушать живой звук», «начать запись на устройстве», Поделиться, обрезка, Главная, поиск по корпусу, пространство команды, карта «Функционал прототипа».</p>
+
+<p class="text-subheader-1" style="margin:var(--size-4x) 0 var(--space-s)">Живой проход 22.09.2026. Каждая кнопка — против API.</p>
+<table class="text-body-3" style="width:100%;border-collapse:collapse">
+  <thead><tr>
+    <th style="text-align:left;padding:var(--space-s);border-bottom:1px solid var(--line-border)">Что на экране</th>
+    <th style="text-align:left;padding:var(--space-s);border-bottom:1px solid var(--line-border)">Исход</th>
+  </tr></thead>
+  <tbody>
+    <tr><td style="padding:var(--space-s)">Начать / стоп записи</td><td style="padding:var(--space-s)">Есть API: <code>enroll</code> и <code>stream</code> или <code>audio</code>, плюс источник</td></tr>
+    <tr><td style="padding:var(--space-s)">Подсказка во время разговора</td><td style="padding:var(--space-s)">Есть API: событие на том же <code>stream</code>. Пустого события нет — карточки нет</td></tr>
+    <tr><td style="padding:var(--space-s)">Сервер задан / адрес / связь</td><td style="padding:var(--space-s)">Нужно, чтобы открыть приём. Адрес задаёт администратор, продавец его не выбирает</td></tr>
+    <tr><td style="padding:var(--space-s)">Список, папки, корзина</td><td style="padding:var(--space-s)">Клиент: файлы на устройстве, не метод приёма</td></tr>
+    <tr><td style="padding:var(--space-s)">Откуда запись</td><td style="padding:var(--space-s)">Есть API: поле источника в пакете</td></tr>
+    <tr><td style="padding:var(--space-s)">Забрать файлы с диктофона</td><td style="padding:var(--space-s)">Дыра Ц-2 / Ц-3: Bluetooth не <code>enroll</code>. Кнопки «забрать» сняты, экран не притворяется</td></tr>
+    <tr><td style="padding:var(--space-s)">Ушла / очередь</td><td style="padding:var(--space-s)">Клиент: файл на диске до успеха <code>audio</code>/<code>stream</code>. Отдельного экрана «Отправка» нет</td></tr>
+    <tr><td style="padding:var(--space-s)">Нет id, указать карточку, не клиент</td><td style="padding:var(--space-s)">Дыра Ц-1: в <code>enroll</code>/<code>stream</code> этих полей нет. Шаг на экране назван дырой</td></tr>
+    <tr><td style="padding:var(--space-s)">Подсказка из карточки сделки</td><td style="padding:var(--space-s)">Дыра Ц-5: снимка полей в API нет</td></tr>
+    <tr><td style="padding:var(--space-s)">Выгрузить расшифровку</td><td style="padding:var(--space-s)">Клиент: уже полученный текст в файл</td></tr>
+    <tr><td style="padding:var(--space-s)">Язык меню, тема, виджет, микрофон ОС</td><td style="padding:var(--space-s)">Клиент, не приём звука</td></tr>
+    <tr><td style="padding:var(--space-s)">Режим записи, профиль подсказок</td><td style="padding:var(--space-s)">Показ политики организации, не форма</td></tr>
+    <tr><td style="padding:var(--space-s)">Приватный звонок</td><td style="padding:var(--space-s)">В приёме поля нет — показ политики, не тумблер</td></tr>
+  </tbody>
+</table>
+`;
 }
 
 function saDraftHtml() {
   return `
-<p class="text-caption-2" style="margin:0 0 var(--space-s)">Черновик требования · 21.09.2026 · форма как у PRD «работа с файлами в AU» · пилот продаж не входит</p>
-<h1 class="text-header-1" style="margin:0 0 var(--size-3x)">FlowMeet: запись разговора, подсказка в приложении, данные после встречи</h1>
-<p class="text-body-3">Оформление как требование к разработке: глоссарий, цели, пользовательские кейсы, функциональные требования. Имена путей — существующий регистратор; если в коде иначе — выровнять код. Корпоративное хранилище в этот контур не входит.</p>
+<p class="text-caption-2" style="margin:0 0 var(--space-s)">22.09.2026 · сверка сценариев и API · требования в git «Требования/»</p>
+<h1 class="text-header-1" style="margin:0 0 var(--size-3x)">FlowMeet — постановка</h1>
+<p class="text-body-3">Приложение пишет разговор и отдаёт его на сервер компании. Пять целей из бизнес-плана 20.08. Клиент в примерах — тестовое ООО «Норд».</p>
 
 <nav class="fm-brief__toc text-body-3">
-  <a href="#sa-gloss">Глоссарий</a>
-  <a href="#sa-goals">Цели</a>
-  <a href="#sa-user">Пользовательские требования</a>
-  <a href="#sa-fr">Функциональные требования</a>
-  <a href="#sa-uc">Сверка с 26.08</a>
-  <a href="#sa-bpmn">BPMN</a>
+  <a href="#sa-status">Состояние</a>
+  <a href="#sa-what">Что это</a>
+  <a href="#sa-api">Экран и API</a>
+  <a href="#sa-c1">Ц-1</a>
+  <a href="#sa-c2">Ц-2</a>
+  <a href="#sa-c3">Ц-3</a>
+  <a href="#sa-c4">Ц-4</a>
+  <a href="#sa-c5">Ц-5</a>
 </nav>
 
-<h2 class="text-header-2" id="sa-gloss">Глоссарий</h2>
-<ul class="text-body-3">
-  <li><strong>Сессия</strong> — идущая запись: локальный файл плюс (если открылось) постоянное соединение с регистратором.</li>
-  <li><strong>Пропуск</strong> — короткий допуск устройства на 30 минут, без пароля, по подписи ключа.</li>
-  <li><strong>Плашка</strong> — экран идущей записи в FlowMeet (на компьютере — виджет): таймер, пауза, отмена, стоп, карточка подсказки.</li>
-  <li><strong>Подсказка</strong> — карточка в FlowMeet во время разговора: тип, текст, источник. Не консультация после встречи.</li>
-  <li><strong>Профиль подсказок</strong> — заданный организацией набор (продажи, поддержка, HR, разработка). Сотрудник его не выбирает.</li>
-  <li><strong>Режим организации</strong> — <code>assistant</code> (помощник) или <code>mandatory</code> (запись обязательна).</li>
-  <li><strong>own / others</strong> — дорожка сотрудника и дорожка собеседника.</li>
-  <li><strong>Регистратор</strong> — сервис приёма <code>http-call-recorder</code> в пространстве организации.</li>
-  <li><strong>Inbox</strong> — очередь подтверждения полей CRM: человек подтверждает, система не пишет молча.</li>
-</ul>
+${saStatusHtml()}
 
-<h2 class="text-header-2" id="sa-goals">Цели</h2>
-<ul class="text-body-3">
-  <li>Сотрудник во время разговора видит в FlowMeet ответ-факт (профиль и, если клиент опознан, карточка CRM), не уходя в другое окно.</li>
-  <li>Запись не теряется при обрыве связи; без соединения подсказки честно опаздывают.</li>
-  <li>После встречи текст с ролями сторон входит в тот же конвейер CRM, что другие источники звука. Во время звонка CRM не заполняется.</li>
-  <li>Организация задаёт режим записи и профиль; сотрудник их не переключает.</li>
-</ul>
+<h2 class="text-header-2" id="sa-what">Что это и зачем</h2>
+<p class="text-body-2">FlowMeet — приложение, которое пишет разговор: с компьютера, с телефона или с диктофона — и отправляет запись на сервер компании, не в чужое облако.</p>
+<p class="text-body-2">Оно нужно, чтобы то, что сказали на встрече с клиентом, само оказывалось в системе продаж. Продавец не переносит договорённости из головы. Руководитель видит встречу на карточке, а не ждёт пересказ.</p>
+<p class="text-body-3">Пять целей. Ц-1 — поля из разговора в карточке. Ц-2 — не чужое облако. Ц-3 — все виды разговоров у предприятия. Ц-4 — счёт касаний в системе продаж. Ц-5 — подсказка во время разговора. Карточку во время звонка не заполняем.</p>
+<p class="text-body-3">В примерах клиент — тестовое ООО «Норд», не живая компания.</p>
 
-<h2 class="text-header-2" id="sa-arch">1. Клиент и сервис приёма</h2>
-<p class="text-body-3">Ответы архитектора на вопросы к Пименову. Пути — регистратор пространства, не новый сервис.</p>
-<ol class="text-body-3">
-  <li><strong>Регистрация и соединение.</strong> <code>POST /api/w/{ws}/call-recorder/enroll</code>: публичный ключ + подпись задачи сервера. В ответ — пропуск на 30 минут. Продление — повторный enroll той же подписью. Дальше одно соединение <code>/api/w/{ws}/call-recorder/stream</code> с <code>Authorization: Bearer {пропуск}</code> и <code>session_id</code>: двоичный звук и JSON-события вместе. <code>POST .../audio</code> — только запас, если stream не открылся (подсказки тогда опоздают). Основной путь не REST раз в секунду.</li>
-  <li><strong>Кадр звука.</strong> 16 кГц, один кодек регистратора (PCM s16le или Opus — какой уже есть). Две монодорожки: поле кадра <code>ch: own | others</code>. Поток непрерывный, куски внутри сессии. В файле после звонка те же каналы. Одна дорожка (переговорная): <code>own</code> плюс флаг «others не записана». В моно до расшифровки не склеивать.</li>
-  <li><strong>Карточка подсказки.</strong> Событие на том же stream, не отдельный канал и не poll. Пустого JSON нет: нет карточки — события нет, клиент держит «пока нечем помочь». Поля: <code>type: hint</code>, <code>id</code>, <code>session_id</code>, <code>ts</code>, <code>profile</code>, <code>kind</code>, <code>title</code>, <code>body</code>, <code>src</code>, <code>utterance_ended_at</code>. Текст = профиль организации плюс снимок карточки CRM, если сессия уже знает клиента (см. §2). Хранилище в этот контур не входит.</li>
-  <li><strong>Журнал задержки.</strong> Сервер: <code>utterance_ended_at</code>, <code>hint_sent_at</code>, разница в мс, <code>session_id</code>, <code>hint id</code>. Клиент может писать <code>hint_received_at</code>. Чисел с 26.08 в постановке нет — не выдумывать. SLO по миллисекундам не ставить, пока журнал не наполнен замером.</li>
-  <li><strong>Обрыв, таймаут, 4xx/5xx.</strong> 401/403 — пропуск сдох или отзыв: закрыть stream, живые подсказки стоп, писать локально в очередь, один retry enroll не чаще чем раз в 30 с. 4xx прочие на кадр — кадр отбросить, сессию не рвать. 5xx / таймаут / обрыв stream — запись доедет, подсказки опоздают, после звонка файл целиком + checksum, при обрыве досылка хвоста. Файл не удалять. Не молотить enroll.</li>
-  <li><strong>Стороны в расшифровке.</strong> Каждый сегмент несёт <code>ch: own | others</code>. Нет второй дорожки — поле <code>missing_side: others</code> (или own). Сливать дорожки на входе конвейера запрещено.</li>
-  <li><strong>Режим и приватный звонок.</strong> Документ политики событием на stream и <code>GET /api/w/{ws}/call-recorder/policy</code> как запас. Поля: <code>version</code>, <code>mode: assistant | mandatory</code>, <code>private_call</code>, <code>hint_profile</code>. Клиент применяет сразу. Сотрудник не редактирует. Пишет политику только админ (§2).</li>
-  <li><strong>Автостарт и ложная тревога.</strong> Условие старта: процесс из списка (Teams / Zoom / браузер) держит микрофон дольше порога занятости (ориентир 3 с, точное число — константа клиента). На сервер файл не уходит, пока нет речи либо человек не снял «это не встреча». Ложная тревога: кнопка до первой успешной отправки на сервер → локальное удаление, на сервер не слать. В <code>mandatory</code> кнопки нет, отказ с причиной.</li>
-  <li><strong>macOS, детектор.</strong> Отдельный процесс захвата, сам поднимается после падения (launchd / watchdog). Перезапуск всего FlowMeet — не целевой путь.</li>
-  <li><strong>Диктофон.</strong> BLE GATT, команды: список, скачать, удалить, часы, старт/стоп, живой звук. UUID — таблица разработки, не выдумывать. Пропал в середине записи (нет ответа дольше таймаута связи): запись не рвать, источник = микрофон телефона, на экране предупреждение, в метаданных сессии <code>source_fallback: phone_mic</code>.</li>
-  <li><strong>Физический прогон.</strong> Автопрогона на живом железе в допуске раздачи нет, пока его не встроили. Целевое: прогон на одном физическом экземпляре каждого семейства обязателен до раздачи сотрудникам (Т7). Сейчас считать «нет».</li>
-</ol>
+<h2 class="text-header-2" id="sa-api">Экран и API</h2>
+<p class="text-body-3">Контракт устройства и приёма — <code>http-call-recorder</code> (<code>enroll</code> / <code>stream</code> / <code>audio</code>): ключ, пропуск, файл, источник, событие подсказки на том же stream. Что сделано, чего нет и что чинить в API — в <a href="#sa-status">состоянии</a>.</p>
 
-<h2 class="text-header-2" id="sa-q">2. Конвейер CRM и админ сервера</h2>
-<p class="text-body-3">Ответы архитектора. Конвейер тот же, что у других источников звука; FlowMeet — источник <code>call_recorder</code> / <code>dictaphone</code>.</p>
-<ol class="text-body-3">
-  <li><strong>Старт 12 шагов.</strong> Событие: транскрипт записи в статусе «готов», не живой звонок. Ключ идемпотентности: <code>recording_id + sha256 файла</code>. Повтор той же суммы — не второй прогон: уже running/done пропускать, иначе заменить результат in-place. Хвост после обрыва с той же id — тот же ключ после полного файла.</li>
-  <li><strong>Само в карточку vs inbox.</strong> Во время звонка CRM не писать. После: закрытые справочники и поля, где замер уже высокий (корпоративный домен и подобные) — в карточку. Имя клиента, этап, сумма, следующий шаг, мягкие атрибуты — в <code>/inbox</code>, пока нет замера ≥ планки поставки. Планка 99 % на 31.08 не взята — молча в карточку эти поля не класть. Порог уверенности — тот, что уже в конвейере; не вводить второй.</li>
-  <li><strong>Нет клиента и сделки.</strong> Не создавать клиента молча. Запись висит на задаче inbox «уточнить клиента». После подтверждения человека — привязка к клиенту и при наличии к открытой сделке; нет сделки — сделку не выдумывать, только если конвейер уверенно завёл её и это ушло в inbox.</li>
-  <li><strong>Подсказка и карточка CRM.</strong> Если сессия сопоставила встречу (календарь, телефон, уже выбранный клиент) — <code>GET</code> сущности клиента в пространстве (открытая сделка, сумма, последний шаг, обязательства). Нет сопоставления —  пустой контекст CRM, подсказки только из профиля, запись не стопать. Писать в CRM с этого запроса нельзя.</li>
-  <li><strong>Кто меняет режим и профиль.</strong> Роль администратора пространства / организации на сервере. Сотрудник FlowMeet — нет. MDM может только доставить URL сервера и факт, что устройство корпоративное, не сменить профиль в обход админки.</li>
-  <li><strong>Отзыв устройства.</strong> Админ: <code>POST /api/w/{ws}/call-recorder/devices/{id}/revoke</code> (или уже существующий эквивалент регистратора). Сервер кладёт ключ в запрет, не помнит сессию между запросами: следующий enroll/stream — 403. Снять запрет — только администратор, отдельным unban. Клиент после 403 не переиспользует пропуск.</li>
-  <li><strong>Источник текста подсказки.</strong> Сейчас: профиль организации + карточка CRM, если клиент опознан. Корпоративное хранилище — следующий этап, в этот контур не смешивать.</li>
-  <li><strong>Приёмка.</strong> Подсказка «доехала» = событие <code>hint</code> получено клиентом (есть <code>hint_received_at</code>). «Успела» — отдельный замер по журналу, без числа в этой постановке. Запись «доехала в CRM» = есть транскрипт и (поле в карточке или карточка inbox). Не обещать автозаполнение на 99 %.</li>
-  <li><strong>Linux.</strong> Целевое окружение плашки — Astra Linux (ориентир клиентской фактуры КАМАЗ). Wayland проверить на нём. «Linux вообще» не принимать.</li>
-</ol>
-
-<h2 class="text-header-2" id="sa-sys">3. Система и граница</h2>
-<p class="text-body-3"><strong>FlowMeet</strong> — клиент на пяти системах плюс сервис приёма звука. Пишет разговор, шлёт его на сервер компании, показывает подсказку <em>в приложении FlowMeet</em>, пока разговор идёт. После звонка тот же звук входит в общий конвейер расшифровки и полей CRM — это соседняя система, не экран клиента.</p>
-<p class="text-body-3"><strong>Внутри границы:</strong> приложение (Windows, macOS, Linux, iPhone, Android), виджет/плашка, очередь файлов, ключ устройства, Bluetooth-диктофоны, сервис приёма (регистрация, поток, хранение, подсказки по профилю), журнал клиента.</p>
-<p class="text-body-3"><strong>Снаружи:</strong> Teams / Zoom / браузер как занятие микрофона; календарь и телефонный стек ОС; MDM; Operavix (пространство, конвейер, CRM). Корпоративное хранилище в этот контур не входит.</p>
-<p class="text-body-3"><strong>Два процесса, не один.</strong> (А) Во время разговора клиент пишет и показывает подсказку. (Б) После разговора конвейер заполняет карточку или очередь подтверждения. Во время звонка CRM не пишется — так в коде на 31.08.</p>
-
-<h2 class="text-header-2" id="sa-actors">4. Акторы</h2>
-<p class="text-body-3"><strong>Сотрудник.</strong> Ведёт разговор, смотрит в FlowMeet, управляет записью в рамках режима организации. Не выбирает профиль подсказок и не включает «запись обязательна» — это приходит с сервера.</p>
-<ul class="text-body-3">
-  <li>На компьютере Windows — единственная сборка, которую уже можно раздавать (MSI, автозапуск). Автообновление написано и выключено до подписи пакетов.</li>
-  <li>На macOS — сборка для запуска, без установщика для сотрудников; упавший детектор сам не встаёт.</li>
-  <li>На Linux — пакеты deb/rpm, нет значка у часов, плашка на Wayland не проверялась.</li>
-  <li>На Android — запись, подсказки, автоопределение звонка, календарь, MDM.</li>
-  <li>На iPhone — запись с кнопки / одним нажатием по напоминанию; микрофон из фона система не даёт включить.</li>
-</ul>
-<p class="text-body-3"><strong>Администратор организации.</strong> Единственный, кто меняет режим, профиль и отзывает устройство. Не сотрудник в FlowMeet.</p>
-<p class="text-body-3"><strong>Системные акторы:</strong> детектор занятости микрофона; сервис приёма; конвейер извлечения полей; очередь отправки на клиенте.</p>
-
-<h2 class="text-header-2" id="sa-flow">5. Как это работает</h2>
-<p class="text-body-3"><strong>Старт.</strong> Компьютер: Teams, Zoom или браузер занял микрофон — запись начинается сама; ложная тревога удаляет файл, на сервер не уходит. Или кнопка в значке у часов / горячие клавиши. Телефон: кнопка; Android ещё сам звонок; iPhone — напоминание и одно нажатие.</p>
-<p class="text-body-3"><strong>Идёт запись.</strong> Плашка: пауза, продолжить, отменить с подтверждением, завершить. Слышны две стороны — две дорожки в одном файле; один микрофон — одна. Звук идёт на сервер постоянным соединением. Подсказка появляется в FlowMeet. Режим «обязательна» отключает паузу, отмену и выход и называет причину.</p>
-<p class="text-body-3"><strong>Связь и очередь.</strong> Соединение не открылось — запись доедет, подсказки опоздают. После звонка файл целиком с контрольной суммой. Обрыв — досылка хвоста. Падение программы — недописанный файл в очередь. Очередь ничего не удаляет. Кончилось место (10 ГБ очереди или меньше получаса диска) — новую запись не начинают.</p>
-<p class="text-body-3"><strong>Доступ устройства.</strong> Пара ключей, пароля нет, пропуск 30 минут. Отзыв действует со следующего запроса. Ключ в файле; на Windows слабее, чем на Linux/macOS; TPM нет.</p>
-<p class="text-body-3"><strong>После звонка.</strong> Транскрипт с ролями → общий конвейер (тот же, что у других источников звука) → поля клиента, сделки, встречи или карточка в очереди подтверждения. Качество мягких полей на 31.08 ниже планки 99 %.</p>
-
-<h2 class="text-header-2" id="sa-uc">6. Пользовательские сценарии</h2>
-<p class="text-body-3">Ссылки «Макет» открывают этот же прототип в нужном состоянии. Макет не равен продукту.</p>
-
-${saUc('UC-01', 'Автостарт записи, когда встречу занял Teams, Zoom или браузер', 'part',
-  '<p>Триггер: выбранное в параметрах приложение заняло микрофон. Клиент начинает писать, на экране плашка. В продукте на Windows заявлено. В макете событие показывается кнопкой «Событие снаружи», сам детектор не реализован как алгоритм. macOS: если детектор упал, автостарта нет до перезапуска.</p>',
-  '?view=tray&rec=auto')}
-
-${saUc('UC-02', 'Ложная тревога: это не встреча', 'done',
-  '<p>Сотрудник на плашке говорит, что встречи нет. Файл удаляется, на сервер не уходит. В обязательном режиме путь должен быть закрыт или объяснён — в передаче отдельно не расписан.</p>',
-  '?view=tray&rec=auto')}
-
-${saUc('UC-03', 'Начать встречу без звонка из значка у часов', 'part',
-  '<p>Кнопка в виджете или горячие клавиши. На Windows и в макете есть. На Linux значка у часов нет — сценарий на этой системе не закрыт.</p>',
-  '?view=tray')}
-
-${saUc('UC-04', 'Пауза и продолжение во время записи', 'part',
-  '<p>На плашке. В режиме «помощник» работает. В режиме «обязательна» кнопка не действует и говорит почему.</p>',
-  '?view=tray&rec=on')}
-
-${saUc('UC-05', 'Отменить запись с подтверждением', 'part',
-  '<p>Единственное необратимое действие: файл уничтожается. Подтверждение обязательно. В обязательном режиме отмена выключена.</p>',
-  '?view=tray&rec=on&confirm=cancel')}
-
-${saUc('UC-06', 'Завершить запись и сохранить', 'done',
-  '<p>Остановка сохраняет файл, ставит в отправку. Расшифровка — после обработки на сервере.</p>',
-  '?view=tray&rec=on')}
-
-${saUc('UC-07', 'Работать в режиме «запись обязательна»', 'done',
-  '<p>Режим приходит с сервера. Пауза, отмена и выход не работают, отказ называет причину. Сотрудник режим не включает.</p>',
-  '?view=tray&rec=on&org=mandatory')}
-
-${saUc('UC-08', 'Приватный звонок по разрешению сервера', 'part',
-  '<p>В передаче есть отдельное разрешение. Экрана выдачи разрешения в постановке нет — видно только следствие на клиенте. В макете состояние переключается с плашки «Организация».</p>',
-  '?view=prefs&prefs=org')}
-
-${saUc('UC-09', 'Смена режима организации без перезапуска', 'done',
-  '<p>Новый режим — событие политики на stream, клиент применяет сразу. Запас: GET policy.</p>',
-  '?view=tray&rec=on')}
-
-${saUc('UC-10', 'Видеть подсказку в FlowMeet, пока идёт разговор', 'part',
-  '<p>Сотрудник смотрит в FlowMeet, не в окно конференции. На телефоне — экран записи с карточкой. На компьютере — плашка/виджет. Профили: продажи, поддержка, HR, разработка. Форма в продукте — ответ-факт. Откуда текст (профиль / карточка CRM / хранилище) не сведён — поэтому статус частичный, хотя канал «звук на сервер → карточка на экран» заявлен работающим. В макете нет пилюли «ЗАПИСЬ АКТИВНА» как на снимке iOS: есть точка, таймер, карточка и счётчик.</p>',
-  '?view=tray&rec=on&hints=3')}
-
-${saUc('UC-11', 'Писать без соединения: запись доедет, подсказки опоздают', 'done',
-  '<p>Честное состояние. На плашке должно быть сказано прямо, не угадано по пустой ленте.</p>',
-  '?view=tray&rec=on&link=off')}
-
-${saUc('UC-12', 'Обрыв связи: дослать хвост файла', 'done',
-  '<p>После звонка — файл с контрольной суммой; при обрыве — хвост. Пользовательского шага нет, кроме очереди.</p>',
-  '?view=app&screen=outbox')}
-
-${saUc('UC-13', 'Программа упала: недописанный файл в очередь', 'done',
-  '<p>При следующем запуске файл не теряется. Пользователь видит очередь.</p>',
-  '?view=app&screen=outbox')}
-
-${saUc('UC-14', 'Места нет — новую запись не начать', 'done',
-  '<p>Порог: 10 ГБ очереди или меньше получаса свободного диска. Старые файлы не трогают. Отказ называется.</p>',
-  '?view=tray&disk=full')}
-
-${saUc('UC-15', 'Запись с iPhone', 'part',
-  '<p>Кнопка, отправка, подсказки, список своих записей. Автостарт микрофона из фона недостижим. Напоминание из календаря — ожидаемый паритет, в передаче 26.08 у iPhone его нет (есть у Android).</p>',
-  '')}
-
-${saUc('UC-16', 'Android: звонок сам и календарь', 'done',
-  '<p>Приложение замечает звонок, напоминает о встрече, принимает корпоративные настройки. Две сборки: для компании и для магазина.</p>',
-  '')}
-
-${saUc('UC-17', 'Писать с диктофона по Bluetooth', 'part',
-  '<p>Список, скачивание, удаление, часы, управление записью, живой звук. Два семейства. Проверено на модели, которая отвечает байтами. Живого автопрогона нет. Если диктофон не на связи — пишет микрофон телефона (на снимке iOS это предупреждение; в макете компьютера выбора AIREC/DOWAY на плашке нет).</p>',
-  '?view=app&screen=devices')}
-
-${saUc('UC-18', 'Открыть свою запись и прочитать, кто что сказал', 'done',
-  '<p>Список файлов, расшифровка с ролями, прослушивание. Конспект, шаблоны вкладок, «поделиться», обрезка в продукте на 26.08 не входили в перечень работающего клиента — в макете они есть как будущее.</p>',
-  '?view=app&screen=note&file=tz&tab=transcript')}
-
-${saUc('UC-19', 'Очередь отправки на сервер', 'done',
-  '<p>Ничего не удаляет. «В очереди N», отправить сейчас. На снимке iOS это на экране записи; в макете компьютера — отдельный раздел.</p>',
-  '?view=app&screen=outbox')}
-
-${saUc('UC-20', 'После встречи поля появляются в CRM', 'part',
-  '<p>Конвейер в коде есть, источник call_recorder назван. На стенде flowmeet-calls 17.09 транскрипты есть, клиенты и сделки пустые, автоматизации не находят строк. Пока запись не связана с карточкой — сценарий для сотрудника не завершён. Во время звонка карточка не заполняется.</p>',
-  '')}
-
-${saUc('UC-21', 'Установить, обновить, ходить вместе с системой', 'part',
-  '<p>Windows: MSI, автозапуск, удаление не трогает записи. Обновление написано, выключено, ставит только Windows. macOS без установщика для сотрудников. Linux без значка у часов.</p>',
-  '?view=prefs&prefs=about')}
-
-${saUc('UC-22', 'Отозвать устройство', 'part',
-  '<p>Поведение на клиенте заявлено. Кто нажимает «отозвать» в админке и каким методом — не описано. В макете отзыв есть в списке сеансов.</p>',
-  '?view=app')}
-
-${saUc('UC-23', 'Спросить ИИ, шаблоны, главная, квота, отметки, свой словарь', 'none',
-  '<p>В макете показано, в передаче 26.08 как работающий клиент не заявлено. Не рисовать в BPMN продукта как существующий путь.</p>',
-  '?view=app&screen=ask')}
-
-<h2 class="text-header-2" id="sa-bpmn">7. BPMN</h2>
-<p class="text-body-3">Два процесса, не один. Сплошная стрелка — поток работ. Пунктир — сообщение между акторами. Ромб — развилка. Жирная точка — конец. Пауза на плашке — цикл на «пишет локально», на схему не вынесена.</p>
+<h2 class="text-header-2" id="sa-c1">Ц-1. Поля заполняются из разговора</h2>
+<p class="text-body-3">Полные требования: git <code>Требования/Требования_Ц-1_2026-09-21.md</code>.</p>
+<p class="text-body-3">Сплошная стрелка — шаг за шагом. Пунктир — передали человеку. Ромб — вопрос. Жирная точка — конец.</p>
 <svg width="0" height="0" aria-hidden="true">${saBpmnDefs()}</svg>
-<h3 class="text-subheader-1">P1. Во время разговора</h3>
-${saBpmnP1()}
-<h3 class="text-subheader-1">P2. После звонка</h3>
-${saBpmnP2()}
+${saBpmnC1()}
 
-<p class="text-caption-2">Конец черновика. Схема = целевые ответы §§1–2. Реализация сверяет с кодом.</p>`;
+<h2 class="text-header-2" id="sa-jtbd">Ц-1 · Job story</h2>
+<p class="text-body-3">Статус: в работе. Источник ценности — бизнес-план устройства FlowMeet, 20.08.2026. Кластер К3 карту не утверждал.</p>
+<table class="text-body-3" style="width:100%;border-collapse:collapse;margin:0 0 var(--size-4x)">
+  <tbody>
+    <tr><td style="padding:var(--space-s);width:28%"><strong>Job statement</strong></td>
+      <td style="padding:var(--space-s)">Когда разговор с клиентом закончился, я хочу, чтобы сказанное клиентом и обещанное ему само оказалось в системе продаж, чтобы не искать в календаре время на перенос.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Клиентский сегмент</strong></td>
+      <td style="padding:var(--space-s)">Первое применение — руководитель продаж и продавец, которые ведут работу в системе продаж. Дальше — любой, кто вносит в платформу данные разговоров руками.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Push</strong></td>
+      <td style="padding:var(--space-s)">Воронка заполняется по памяти продавца. Руководитель управляет по пересказу.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Pull</strong></td>
+      <td style="padding:var(--space-s)">Поля заполняются из разговора. Время остаётся на переговоры, не на перенос.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Habits</strong></td>
+      <td style="padding:var(--space-s)">После встречи продавец сам открывает карточку и переносит договорённости. Факт звонка пишет комментарием или не пишет.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Anxieties</strong></td>
+      <td style="padding:var(--space-s)">Система заведёт не ту компанию. Подставит не того, кто решает, или не ту сумму. Планёрка попадёт в карточку клиента.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>Топ-3 сценария</strong></td>
+      <td style="padding:var(--space-s)">1. Встреча уже стоит в календаре. 2. Неясно, с кем говорили. 3. Подтвердить, что сказал клиент и что ему пообещали. Остальные четыре — ниже в §5.</td></tr>
+    <tr><td style="padding:var(--space-s)"><strong>DoD</strong></td>
+      <td style="padding:var(--space-s)">Работа выполнена, если разговор дошёл до карточки клиента и продавцу не нужно переносить его руками. Мера из плана: минуты на перенос и доля разговоров, дошедших до карточки. Чисел замера пока нет.</td></tr>
+  </tbody>
+</table>
+<h2 class="text-header-2" id="sa-cases">Ц-1 · Сценарии</h2>
+<p class="text-body-3">Пользователь хочет, чтобы разговор сам оказывался на карточке клиента.</p>
+<ul class="text-body-3">
+  <li>Продавец хочет, чтобы встреча из календаря попала на уже открытую карточку и сделку.</li>
+  <li>Продавец хочет, чтобы звонок человеку из карточки был виден во «Встречах и звонках».</li>
+  <li>Продавец хочет, чтобы система не заводила компанию, если непонятно, с кем говорили.</li>
+  <li>Продавец хочет сам подтвердить, кто принимает решение, что пообещали и какой следующий шаг — и поправить, если машина ошиблась.</li>
+  <li>Продавец хочет, чтобы запись диктофоном в переговорной шла в ту же карточку, что запись с компьютера.</li>
+  <li>Продавец не хочет, чтобы планёрка попала в карточку клиента.</li>
+  <li>Руководитель хочет видеть, что встреча была, а не ждать пересказ.</li>
+</ul>
+
+<p class="text-body-3"><strong>Кейс 1. Встреча уже стоит в календаре</strong><br>
+У тестового ООО «Норд» уже есть карточка и открытая сделка. В календаре продавца — встреча с этим клиентом. FlowMeet пишет разговор.<br>
+<strong>Проблема:</strong> разговор закончился, а в карточке компании его как не было. Продавец сам открывает паспорт и сделки и переносит договорённости из головы. Пока он это не сделал, руководитель думает, что встречи не было.<br>
+<strong>Решение:</strong> система видит ту же встречу, что уже стоит в календаре, и понимает: это ООО «Норд», новую компанию заводить не надо. Продавец после звонка открывает карточку клиента — и в «Встречах и звонках» эта встреча уже есть, рядом с теми, что приходят из календаря. Вторую сделку система не открывает.</p>
+
+<p class="text-body-3"><strong>Кейс 2. Звонок человеку, который уже есть в карточке</strong><br>
+Продавец звонит человеку, чей телефон уже записан у ООО «Норд».<br>
+<strong>Проблема:</strong> в карточке звонка не видно. Продавец пишет комментарий руками или не пишет ничего.<br>
+<strong>Решение:</strong> система узнаёт клиента по номеру, как по календарю в кейсе 1. Новую компанию и новую сделку не заводит. В «Встречах и звонках» появляется этот звонок.</p>
+
+<p class="text-body-3"><strong>Кейс 3. Неясно, с кем говорили</strong><br>
+Запись есть. Календарь карточку не дал, номера нет, до записи карточку не выбирали.<br>
+<strong>Проблема:</strong> если система сама заведёт компанию — в воронке двойники. Если на каждую такую запись создать задачу в продажах — туда же поедут планёрки.<br>
+<strong>Решение:</strong> файл на сервер компании. В продажи — нет, пока нет id карточки. В списке FlowMeet запись «нет id карточки». Указал карточку — как в кейсе 1. Нажал «не клиент» или ничего не нажал — карточки не трогаем.</p>
+
+<p class="text-body-3"><strong>Кейс 4. Что сказал клиент и что ему пообещали</strong><br>
+На карточке ООО «Норд» не сказано, кто принимает решение. Сумма сделки уже есть. Что обещали на встрече — только в письме, из голоса этого нет.<br>
+<strong>Проблема:</strong> цель — чтобы поля заполнялись из разговора. Но писать сразу в чистую нельзя: в карточке поля сначала черновик, человек жмёт «Подтвердить». Иначе машина может подставить не того человека или не ту сумму.<br>
+<strong>Решение:</strong> после расшифровки продавец видит черновик: кто принимает решение, что пообещали, какой следующий шаг, какие условия назвали. Он подтверждает, правит или отправляет переделать. Сама запись не двигает этап сделки, не меняет ответственного и не ставит «оплачено».</p>
+
+<p class="text-body-3"><strong>Кейс 5. Это не встреча с клиентом</strong><br>
+Планёрка, собеседование, внутренний разбор. Id карточки нет — снаружи как кейс 3.<br>
+<strong>Проблема:</strong> система не отличит это от клиентского разговора по звуку. Задача в продажах на каждую планёрку хуже, чем запись, которая пока лежит в FlowMeet.<br>
+<strong>Решение:</strong> как кейс 3: в продажи не класть, пока нет id. Продавец жмёт «не клиент» или оставляет в списке. Текст в FlowMeet. Если уехала по ошибке — снимает событие в канале, файл не трём.</p>
+
+<p class="text-body-3"><strong>Кейс 6. Писали не с компьютера, а диктофоном</strong><br>
+Встреча в переговорной, не в Teams. Звук снял диктофон, писал тот же продавец.<br>
+<strong>Проблема:</strong> если в карточку попадают только онлайн-встречи, разговор за столом для руководителя как будто не существовал.<br>
+<strong>Решение:</strong> после записи путь тот же, что в кейсе 1. Продавец открывает ту же карточку ООО «Норд» — встреча на месте, в ленте видно, что писали диктофоном, а не что пришло письмо.</p>
+
+<p class="text-body-3"><strong>Кейс 7. Руководитель открывает карточку</strong><br>
+Руководитель смотрит ООО «Норд»: деньги, встречи, паспорт, на каком этапе сделка.<br>
+<strong>Проблема:</strong> он видит почту и календарь. Что было сказано голосом — только если продавец сам пересказал. Управлять воронкой нечем.<br>
+<strong>Решение:</strong> он видит, что встреча была: в «Встречах и звонках» плюс одна, в ленте строка про этот разговор, черновик полей из кейса 4. Нехватка документов по этапу сама от записи не закрывается — это по-прежнему решение человека.</p>
+
+<h2 class="text-header-2" id="sa-dev">Ц-1 · Требования</h2>
+<p class="text-body-3">В приложении FlowMeet: после конца разговора отдать на сервер компании звук, кто писал, откуда звук, привязку и id карточки, если он уже есть. Нет id — так и сказать, в продажи не слать. Во время разговора в систему продаж не писать. В списке: ушла / очередь / нет id карточки.</p>
+<p class="text-body-3">На сервере: текст с ролями «мы» и «клиент». Без ролей черновик «сказал / пообещали» не строить, запись хранить.</p>
+<p class="text-body-3">В системе продаж: только если есть id карточки — встреча в «Встречах и звонках», черновик до «Подтвердить». Компанию и сделку не создавать. Две открытые сделки и календарь молчит — событие на карточке без сделки. Этап, ответственного и «оплачено» записью не менять.</p>
+
+${typeof saC25Html === 'function' ? saC25Html() : ''}
+<p class="text-caption-2">Конец. Требования Ц-1…Ц-5 — папка Требования в git flowmeet.</p>`;
 }

@@ -742,7 +742,8 @@ body {
 </noscript>
 
 
-<aside class="fm-map" id="featureMap" aria-label="Функционал прототипа"></aside>
+
+
 <div class="fm-stage">
 <div class="fm-plaque text-caption-2">
   <span class="fm-plaque__tag">Прототип · выброс</span>
@@ -777,6 +778,7 @@ body {
   <span class="fm-plaque__switch" id="permSwitch">
     <button data-orgtoggle="privateCalls">Приватный звонок</button>
     <button data-orgtoggle="diarization">Разделение голосов</button>
+    <button data-orgtoggle="server">Сервер задан</button>
   </span>
 </div>
 
@@ -816,7 +818,7 @@ body {
 </div>
 
 <!-- Общая часть двух прототипов: данные, счёт, язык. Своей копии нет. -->
-<script src="../flowmeet-shared/data.js"></script>
+<script src="../flowmeet-shared/data.js?v=0922j"></script>
 
 <script>
 /* СТАРАЯ КОПИЯ ОБЩЕЙ ЧАСТИ — самая частая причина «страница не грузит»: браузер
@@ -824,11 +826,13 @@ body {
    падает, экран остаётся пустым, и причина не видна — обновление с очисткой кэша
    чинит, но догадаться про это нельзя. Проверяем ЗАРАНЕЕ и называем причину. */
 (function () {
-  var need = { devSpace: 'память диктофона', hintsAfter: 'подсказки за репликой',
+  var need = { hintsAfter: 'подсказки за репликой',
                recLinesAt: 'ход живой расшифровки', linesForHints: 'ссылка на подсказки',
-               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк',
+               num: 'вывод чисел', t: 'перевод строк',
                wrapRoadmap: 'яркость сценариев к разработке',
-               featureMapHtml: 'список функционала прототипа' };
+               featureMapHtml: 'список функционала прототипа',
+               recListTagHtml: 'метка записи в списке',
+               recCardActionsHtml: 'указать карточку' };
   var miss = Object.keys(need).filter(function (n) {
     /* typeof по необъявленному имени не падает, поэтому проверка безопасна. */
     return eval('typeof ' + n) !== 'function';
@@ -854,7 +858,7 @@ const M = {
      телефоне разделы открывают переходом. */
   screen: 'folders',               // folders | files | note | search | ask | templates | more | set | membership
   scope: { kind: 'all', value: null },
-  fileId: 'demo', tab: 'summary', generated: {},
+  fileId: 'demo', tab: 'transcript', generated: {},
   q: '', ask: { q: '', folder: null, asked: false },
   playing: false, speed: 1,
   /* Поиск внутри открытой записи: без него часовая встреча нечитаема. */
@@ -870,7 +874,7 @@ const M = {
   newFolderColor: 1, moveAfterCreate: null,
   /* Добавлено 27.08.2026 по спеке «Сверка прототипов с описанием работы»:
      диктофоны, источник записи, очередь отправки, подтверждение. */
-  devId: 'a1', micSrc: 'Автоматически', confirm: null, hintsOpen: false, listen: null,
+  devId: 'a1', micSrc: 'AIREC · 0335', confirm: null, hintsOpen: false, listen: null,
   /* Откуда открыли запись — чтобы «назад» вернуло туда же, а не в общий список. */
   came: null,
   /* Шаблон, которым разбираются НОВЫЕ записи. Перенесён из настольного
@@ -1086,46 +1090,26 @@ function screenFolders() {
       </span>
     </div>`;
   return nav(t('Записи'), {
-    acts: `<button class="fm-btn fm-btn--icon" data-go="search" aria-label="${t('Поиск')}">${ic(I.search, 'fm-i--l')}</button>
-           <button class="fm-btn fm-btn--icon" data-sheet="newfolder" aria-label="${t('Новая папка')}">${ic(I.plus, 'fm-i--l')}</button>`
+    acts: `<button class="fm-btn fm-btn--icon" data-sheet="newfolder" aria-label="${t('Новая папка')}">${ic(I.plus, 'fm-i--l')}</button>`
   })
   + `<div class="m-scroll m-scroll--fab" id="scroll">
       ${large(t('Записи'), `${q.n} ${plZap(q.n)} · ${num(q.hours, 1)} ${t('ч')}`)}
       <!-- Состояние, в котором сотрудник окажется чаще всего: связь и очередь
            отправки. Полоса нажимается и ведёт на экран отправки. -->
-      ${(!LINK.live || QUEUE.length) ? `<button class="m-linkbar ${LINK.live ? '' : 'is-off'}" data-go="outbox"
-          style="width:calc(100% - var(--size-10x));border:none;font-family:inherit;text-align:left;cursor:pointer">
+      ${!LINK.live ? `<div class="m-linkbar is-off">
           <span class="m-linkbar__dot"></span>
-          <span class="m-linkbar__txt m-cap">${t(LINK.live
-            ? 'Записи ждут отправки на сервер'
-            : 'Связи нет — запись доедет, подсказки опоздают')}</span>
-          ${QUEUE.length ? `<span class="fm-tag">${t('в очереди')} ${QUEUE.length}</span>` : ''}
-        </button>` : ''}
+          <span class="m-linkbar__txt m-cap">${t('Связи нет — запись доедет, подсказки опоздают')}</span>
+        </div>` : ''}
       ${micFallback() ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
         <span>${t('Диктофон не на связи — записывает микрофон телефона.')}</span></div>` : ''}
       ${isMandatory() ? `<div class="m-warn m-cap">${ic(I.lock, 'fm-i--s')}
         <span>${t('Организация включила режим «запись обязательна»: встречи записываются, прервать запись нельзя.')}</span></div>` : ''}
+      ${!ORG.server ? `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}
+        <span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>` : ''}
+      ${recSessionCardHtml('m')}
       <div class="m-group">${smart.map(x => row(x.kind, null, t(x.label), x.icon)).join('')}</div>
       <div class="m-grouphead m-cap">${t('Папки')}</div>
       <div class="m-group">${FOLDERS.map(f => row('folder', f.name, esc(f.name), null, f.color)).join('')}</div>
-      <div class="m-grouphead m-cap">${t('Мой лимит')}</div>
-      <!-- Отступы по бокам даёт ОБЁРТКА, а не сама карточка: у карточки ширина
-           100% родителя, поэтому боковой отступ прибавлялся к ней и выталкивал
-           её за правый край экрана на 20 px — вылезала она даже за корпус
-           телефона. Так же обёрнуты карточки шаблонов; второго приёма отступов
-           не заводим (правка 28.08.2026 по замечанию владельца).
-           Обратных кавычек в комментариях внутри разметки быть не должно: она
-           собирается шаблонной строкой, и кавычка её закрывает. -->
-      <div class="m-pad" style="margin-bottom:var(--size-4x)">
-      <button class="m-card" data-go="membership">
-        <div style="display:flex;align-items:center;gap:var(--space-m)">
-          <h3 class="m-head" style="flex:1 1 auto;min-width:0">${t('Личное пространство')}</h3>
-          ${ic(I.go, 'fm-i--s m-row__chev')}
-        </div>
-        <div class="m-quota__rail"><div class="m-quota__fill" style="width:${q.leftPct}%"></div></div>
-        <p class="m-cap m-dim">${phraseQuota(q)}</p>
-      </button>
-      </div>
       <div class="m-bottom"></div>
     </div>`;
 }
@@ -1157,10 +1141,10 @@ function fileRow(f, timeOnly) {
           ? `<span class="m-row__prev m-sub m-row__prev--wait">${ic(I.spin, 'fm-i--s')}<span>${t('Расшифровываем…')}</span></span>`
           : pv ? `<span class="m-row__prev m-sub">${esc(pv)}</span>` : ''}
         <span class="m-row__meta m-cap">
+          ${recListTagHtml(f)}
           ${f.folder ? `<span class="m-row__dot" style="background:${folderColor(f.folder)}"></span>` : ''}
           <span class="m-num">${esc(timeOnly ? fmtTimeOnly(f.ts) : fmtShort(f.ts))}</span>
           <span class="m-sep">·</span><span class="m-num">${esc(fmtDurShort(f.sec))}</span>
-          ${marksOf(f.id).length ? ic(I.mark, 'fm-i--s') : ''}
         </span>
       </span>
       <button class="m-row__act" data-rowmenu="${f.id}" aria-label="${t('Ещё')}">${ic(I.more)}</button>
@@ -1181,8 +1165,7 @@ function screenFiles() {
   const hours = r.reduce((a, f) => a + f.sec, 0) / 3600;
   return nav(esc(scopeTitle()), {
     back: true,
-    acts: `<button class="fm-btn fm-btn--icon" data-go="search" aria-label="${t('Поиск')}">${ic(I.search, 'fm-i--l')}</button>
-           <button class="fm-btn fm-btn--icon" data-sheet="sort" aria-label="${t('Порядок')}">${ic(I.sort, 'fm-i--l')}</button>`
+    acts: `<button class="fm-btn fm-btn--icon" data-sheet="sort" aria-label="${t('Порядок')}">${ic(I.sort, 'fm-i--l')}</button>`
   })
   + `<div class="m-scroll m-scroll--fab" id="scroll">
       ${large(esc(scopeTitle()), `${r.length} ${plZap(r.length)} · ${num(hours, 1)} ${t('ч')}`)}
@@ -1312,16 +1295,14 @@ function miniPlayer(f) {
         <svg class="fm-i fm-i--l" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M8.5 5.2l11 6.8-11 6.8z"/></svg>
       </button>
       <span class="m-acc__side">
-        <button class="fm-btn fm-btn--icon" id="btnMark" aria-label="${t('Отметить это место')}">${ic(I.mark, 'fm-i--l')}</button>
         <button class="fm-btn fm-btn--text m-sub m-num" data-sheet="player" aria-label="${t('Проигрыватель')}"
           style="min-width:56px;padding:0;color:var(--text-primary)"><span id="plAt">${fmtTotal(Math.round(at))}</span></button>
       </span>`;
 }
 function screenNote() {
   const f = file();
-  const tabs = [{ id: 'transcript', name: 'Расшифровка' }, { id: 'summary', name: 'Конспект' },
-                { id: 'marks', name: 'Важное' },
-                ...(f.custom || []).map(c => ({ id: c.id, name: c.name }))];
+  const tabs = [{ id: 'transcript', name: 'Расшифровка' }];
+  if (!tabs.some(x => x.id === M.tab)) M.tab = 'transcript';
   return nav(esc(f.title), {
     back: true,
     /* Два действия в панели, не три: «поделиться» живёт в меню «…» рядом с
@@ -1346,8 +1327,9 @@ function screenNote() {
       </div>
       <div class="m-segsrow"><div class="m-segs">
       ${tabs.map(x => `<button class="m-seg-btn ${x.id === M.tab ? 'is-on' : ''}" data-tab="${x.id}">${esc(x.name)}</button>`).join('')}
-        <button class="m-seg-btn" data-sheet="addtpl" aria-label="${t('Добавить разбор по шаблону')}">${ic(I.plus, 'fm-i--s')}</button>
       </div></div>
+      ${crmBannerHtml(f, 'm')}
+      ${recCardActionsHtml(f.id, 'm')}
       ${noteBody(f)}<div class="m-bottom"></div></div>`;
 }
 /* Реплика: нажатие переводит звук к ней, отмеченная несёт закладку. Найденное
@@ -1386,7 +1368,6 @@ function segRow(f, s, cs) {
         <button class="m-who m-head m-data ${s.role === 'мы' ? 'm-who--mine' : ''}"
           data-person="${esc(s.who)}">${esc(s.who)}</button>
         <span class="m-time m-cap">${esc(s.time)}</span>
-        ${marksOf(f.id).includes(s.i) ? `<span class="m-seg-row__mark">${ic(I.mark, 'fm-i--s')}</span>` : ''}
       </div>
       <p class="m-body">${hl(s.text, M.find)}</p>
     </div>`;
@@ -1550,71 +1531,36 @@ function screenMembership() {
 }
 
 /* ============================ ЭКРАН: ЕЩЁ И НАСТРОЙКИ ====================== */
-const SET_ROWS = [
-  ['account', 'Аккаунт и безопасность', I.user],
-  /* Подпись короче настольной: на телефоне рядом стоит значение «Русский» и
-     шеврон, и «Язык интерфейса» с ними не помещалось — обрезались ОБА, и
-     подпись, и значение. Значок глобуса со значением снимают двусмысленность. */
-  ['lang', 'Язык', I.lang],
-  ['recording', 'Запись', I.mic],
-  ['org', 'Организация', I.shield],
-  ['cloud', 'Сервер организации', I.cloud],
-  ['notify', 'Уведомления', I.bell],
-  ['support', 'Написать в поддержку', I.chat],
-  ['about', 'О программе', I.info]
-];
 function screenMore() {
-  const q = stats();
   return nav(t('Ещё'))
   + `<div class="m-scroll" id="scroll">
       ${large(t('Ещё'))}
       <div class="m-group">
-        <div class="m-row" data-go="membership">
+        <div class="m-row" style="cursor:default">
           <span class="m-avatar m-head">АР</span>
           <span class="m-row__body">
             <span class="m-row__title m-head">a.ralovets</span>
-            <span class="m-row__meta m-row__meta--wrap m-cap"><span>${t('Личное пространство')} · ${phraseQuota(q)}</span></span>
+            <span class="m-row__meta m-row__meta--wrap m-cap"><span>${t('Личное пространство')}</span></span>
           </span>
+        </div>
+      </div>
+      <div class="m-group">
+        <div class="m-row m-row--inset" data-set="prefs">
+          <span class="m-row__ico">${ic(I.gear)}</span>
+          <span class="m-row__body m-body">${t('Параметры')}</span>
           ${ic(I.go, 'fm-i--s m-row__chev')}
         </div>
       </div>
-      <div class="m-grouphead m-cap">${t('Настройки')}</div>
-      <div class="m-group">
-        ${SET_ROWS.map(([k, label, icon]) => `
-          <div class="m-row m-row--inset" data-set="${k}">
-            <span class="m-row__ico">${ic(icon)}</span>
-            <span class="m-row__body m-body">${label}</span>
-            ${k === 'lang' ? `<span class="m-row__val m-body">${LANG === 'en' ? 'English' : 'Русский'}</span>` : ''}
-            ${ic(I.go, 'fm-i--s m-row__chev')}
-          </div>`).join('')}
-      </div>
       <!-- Диктофоны и очередь отправки — не настройки, а разделы: у продукта
            направления «Железо» устройство и есть предмет работы. -->
-      <div class="m-grouphead m-cap">${t('Устройства и отправка')}</div>
+      <div class="m-grouphead m-cap">${t('Устройства')}</div>
       <div class="m-group">
         <div class="m-row m-row--inset" data-go="devices">
           <span class="m-row__ico">${ic(I.device)}</span>
-          <span class="m-row__body m-body">${t('Диктофоны')}</span>
+          <span class="m-row__body m-body">${t('Очередь загрузки')}</span>
           <span class="m-row__right">
             <span class="m-row__val m-body m-num">${devOnline().length} <span>${t('из')}</span> ${DEVICES.length}</span>
             ${ic(I.go, 'fm-i--s m-row__chev')}</span>
-        </div>
-        <div class="m-row m-row--inset" data-go="outbox">
-          <span class="m-row__ico">${ic(I.queue)}</span>
-          <span class="m-row__body m-body">${t('Отправка')}</span>
-          <span class="m-row__right">
-            <span class="m-row__val m-body m-num">${QUEUE.length}</span>
-            ${ic(I.go, 'fm-i--s m-row__chev')}</span>
-        </div>
-      </div>
-      <div class="m-grouphead m-cap">${t('Приложения FlowMeet')}</div>
-      <div class="m-group">
-        <div class="m-row" data-getapp="1">
-          <span class="m-row__ico">${ic(I.export)}</span>
-          <span class="m-row__body">
-            <span class="m-row__title m-body">${t('FlowMeet для рабочего стола')}</span>
-            <span class="m-row__meta m-cap"><span>${t('Запись онлайн-встреч со звуком системы.')}</span></span>
-          </span>
         </div>
       </div>
       <p class="m-pad m-cap m-dim">0.9.4 (${t('прототип')})</p>
@@ -1629,6 +1575,11 @@ function screenMore() {
 const micDevId = () => (DEVICES.find(d => d.name === M.micSrc) || {}).id || null;
 const micIsDevice = () => !!micDevId();
 const micFallback = () => { const d = devById(micDevId()); return !!d && d.link === 'off'; };
+function recSourceLine() {
+  if (micFallback()) return t('Диктофон не на связи — записывает микрофон телефона.');
+  if (micIsDevice()) return t('Источник') + ': ' + t(M.micSrc) + ' · ' + t('ноутбук не нужен');
+  return t('Источник — микрофон телефона');
+}
 function optRow(title, sub, right) {
   return `<div class="m-row m-row--inset" style="cursor:default">
     <span class="m-row__body">
@@ -1639,6 +1590,20 @@ function optRow(title, sub, right) {
 }
 const tglRow = (key, def) => `<button class="m-toggle ${M.tgl[key] === undefined ? (def ? 'is-on' : '') : (M.tgl[key] ? 'is-on' : '')}" data-toggle="${key}"></button>`;
 M.tgl = {};
+function orgServerPane() {
+  const v = orgServerView();
+  const tag = (on, yes, no) => on
+    ? `<span class="fm-tag fm-tag--green">${t(yes)}</span>`
+    : `<span class="fm-tag fm-tag--red">${t(no)}</span>`;
+  const warn = v.set ? ''
+    : `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}<span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>`;
+  return `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Куда уходит звук, задаёт администратор. В приложении адрес только показан. Продавец его не выбирает и не выключает.')}</p>
+    <div class="m-group">
+      ${optRow('Сервер', '', tag(v.set, 'Задан', 'Не задан'))}
+      ${optRow('Адрес', '', `<span class="m-cap m-num">${esc(v.addr)}</span>`)}
+      ${optRow('Связь сейчас', 'Если связи нет, запись остаётся на устройстве и уйдёт на этот же адрес, когда связь появится.', tag(v.live, 'Есть', 'Нет'))}
+    </div>${warn}`;
+}
 const SET_PANES = {
   account: () => `<div class="m-group">
       ${optRow('Учётная запись организации', 'a.ralovets@infomaximum.com', `<button class="fm-btn fm-btn--sm" data-passwd="1">${t('Сменить пароль')}</button>`)}
@@ -1699,13 +1664,7 @@ const SET_PANES = {
     </div>
     ${OS === 'ios' ? `<p class="m-pad m-cap m-dim">${t('Сам звонок приложение видит. Начать запись по нему оно не может: iPhone не даёт включить микрофон, пока приложение не открыто.')}</p>` : ''}
     <p class="m-pad m-cap m-dim">${t('Перед записью убедитесь, что участники предупреждены о записи и расшифровке и что получено согласие, если оно требуется по закону в вашей стране и в странах участников. Приложение не проверяет согласие за вас.')}</p>`,
-  cloud: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Записи хранятся на сервере вашей организации, а не в чужом облаке.')}</p>
-    <div class="m-group">
-      ${optRow('Выгружать записи на сервер', 'Записи копируются на сервер организации автоматически', tglRow('upload', true))}
-      ${optRow('Только по Wi-Fi', 'Не расходовать мобильный трафик', tglRow('wifi', true))}
-      ${optRow('Сервер организации', 'flowmeet.local · ' + t('Связь есть'), `<span class="fm-tag fm-tag--green">${t('Включено')}</span>`)}
-    </div>
-    <p class="m-pad m-cap m-dim">${t('Адрес сервера задаёт администратор — в приложении он только показан.')}</p>`,
+  cloud: () => orgServerPane(),
   /* Режим записи задаёт организация, и приложение его только ПОКАЗЫВАЕТ:
      пользователь режим, профиль подсказок и разрешения сервера не выбирает.
      Переключатель для показа стоит в плашке прототипа — внутри экрана он
@@ -1735,16 +1694,13 @@ const SET_PANES = {
     </div>
     <div class="m-grouphead m-cap">${t('Что можно не записывать')}</div>
     <div class="m-group">
-      ${optRow('Приватный звонок', 'Разрешение выдаёт сервер организации отдельно от режима записи',
+      ${optRow('Приватный звонок', 'В API приёма звука этого поля нет. Здесь только показ политики организации.',
         `<span class="fm-tag">${t(ORG.privateCalls ? 'Разрешён' : 'Запрещён')}</span>`)}
-      ${optRow('Разделение голосов', 'Подключаемая служба сервера: без неё в расшифровке один говорящий',
-        `<span class="fm-tag">${t(ORG.diarization ? 'Включено' : 'Выключено')}</span>`)}
     </div>`,
 
   notify: () => `<div class="m-group">
       ${optRow('Начало встречи', 'Спрашивать, начинать ли запись', tglRow('n1', true))}
-      ${optRow('Запись загружена', 'Сообщить, когда запись готова к разбору', tglRow('n2', true))}
-      ${optRow('Заметка готова', 'Сообщить, когда расшифровка и конспект собраны', tglRow('n3', true))}
+      ${optRow('Запись ушла на сервер', 'Сообщить, когда файл принят', tglRow('n2', true))}
     </div>`,
   support: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Здравствуйте. Опишите, что происходит и на каком устройстве, — так разберёмся быстрее. Либо выберите тему ниже.')}</p>
     <div class="m-askchips" style="margin-bottom:var(--size-5x)">${
@@ -1754,7 +1710,7 @@ const SET_PANES = {
       <textarea class="fm-textarea" id="supMsg" placeholder="${t('Опишите вопрос')}"></textarea>
       <div style="margin-top:var(--size-4x)"><button class="fm-btn fm-btn--primary fm-btn--block" data-supsend="1">${t('Отправить')}</button></div>
     </div>`,
-  about: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('FlowMeet для телефона — запись встреч, расшифровка и разбор по шаблонам внутри контура организации.')}</p>
+  about: () => `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('FlowMeet для телефона — запись встреч и расшифровка на сервере организации.')}</p>
     <div class="m-group">
       ${optRow('Версия приложения', 'Сборка для внутреннего показа', `<span class="m-cap m-num">0.9.4</span>`)}
       ${optRow('Сборка', OS === 'android'
@@ -1765,11 +1721,22 @@ const SET_PANES = {
       ${optRow('Удаление приложения', 'Записи остаются на сервере организации', `<span class="fm-tag">${t('Записи остаются')}</span>`)}
     </div>`
 };
-const SET_TITLES = Object.fromEntries(SET_ROWS.map(([k, label]) => [k, label]));
 function screenSet() {
-  const title = SET_TITLES[M.setPane] || t('Настройки');
-  return nav(title, { back: true })
-    + `<div class="m-scroll" id="scroll">${large(title)}${(SET_PANES[M.setPane] || SET_PANES.account)()}<div class="m-bottom"></div></div>`;
+  return nav(t('Параметры'), { back: true })
+    + `<div class="m-scroll" id="scroll">${large(t('Параметры'))}
+        <div class="m-grouphead m-cap">${t('Аккаунт')}</div>
+        ${SET_PANES.lang()}
+        ${SET_PANES.account()}
+        <div class="m-grouphead m-cap">${t('Запись')}</div>
+        ${SET_PANES.recording()}
+        <div class="m-grouphead m-cap">${t('Организация')}</div>
+        ${SET_PANES.org()}
+        ${SET_PANES.cloud()}
+        <div class="m-grouphead m-cap">${t('Уведомления')}</div>
+        ${SET_PANES.notify()}
+        <div class="m-grouphead m-cap">${t('О программе')}</div>
+        ${SET_PANES.about()}
+        <div class="m-bottom"></div></div>`;
 }
 
 /* ═══════════ ЭКРАН: ДИКТОФОНЫ ════════════════════════════════════════════
@@ -1793,27 +1760,13 @@ function devBlock(d) {
         </span>
         <span class="m-row__right">${devLinkTag(d)}</span>
       </div>
-      <div class="m-row m-row--inset" style="cursor:default;display:block">
-        <span style="display:flex;align-items:center;gap:var(--space-m)">
-          <span class="m-body" style="flex:1 1 auto">${t('Заряд')}</span>
-          <span class="m-body m-num">${d.battery}%</span>
-        </span>
-        <span class="m-bat" style="display:block"><span class="m-bat__fill ${d.battery < 20 ? 'is-low' : ''}"
-          style="width:${d.battery}%;display:block;height:100%"></span></span>
-      </div>
-      <div class="m-row m-row--inset" style="cursor:default">
-        <span class="m-row__body m-body">${t('Свободно')}</span>
-        <span class="m-row__right"><span class="m-row__val m-body m-num">${devSpace(d)} <span>${t('ГБ')}</span></span></span>
-      </div>
       <div class="m-row m-row--inset" style="cursor:default">
         <span class="m-row__body m-body">${t('Новых записей')}</span>
         <span class="m-row__right"><span class="m-row__val m-body m-num">${recs.length}</span></span>
       </div>
     </div>
     ${off ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
-      <span>${t('Диктофон не на связи. Заряд и память показаны последние известные; записи заберём, как только он ответит.')}</span></div>` : ''}
-    ${!d.clockOk && !off ? `<div class="m-warn m-cap">${ic(I.clock, 'fm-i--s')}
-      <span>${t('Часы устройства разошлись с телефоном — время записей будет неверным.')}</span></div>` : ''}
+      <span>${t('Диктофон не на связи.')}</span></div>` : ''}
     ${recs.length ? `<div class="m-group">
       ${recs.map(r => `<div class="m-row m-row--inset">
           <span class="m-row__body">
@@ -1821,23 +1774,18 @@ function devBlock(d) {
             <span class="m-row__meta m-cap"><span class="m-num">${esc(fmtShort(r.ts))}</span>
               <span class="m-sep">·</span><span class="m-num">${esc(fmtDurShort(r.sec))}</span></span>
           </span>
-          <button class="m-row__act" data-devget="${r.id}" aria-label="${t('Забрать запись')}">${ic(I.export)}</button>
         </div>`).join('')}
-      </div>` : ''}
-    <div class="m-pad" style="margin-bottom:var(--size-5x);display:flex;flex-direction:column;gap:var(--size-3x)">
-      <button class="fm-btn fm-btn--primary fm-btn--block" data-devall="${d.id}">${t('Забрать все записи')}</button>
-      <button class="fm-btn fm-btn--block" data-devlisten="${d.id}">${M.listen === d.id ? t('Остановить прослушивание') : t('Слушать живой звук')}</button>
-      <button class="fm-btn fm-btn--block" data-devrec="${d.id}">${t('Начать запись на устройстве')}</button>
-      ${!d.clockOk ? `<button class="fm-btn fm-btn--block" data-devclock="${d.id}">${t('Сверить часы')}</button>` : ''}
-    </div>`;
+      </div>
+      <p class="m-pad m-cap m-dim">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>` : ''}`;
 }
 function screenDevices() {
   const on = devOnline().length;
-  return nav(t('Диктофоны'), { back: true,
-    acts: `<button class="fm-btn fm-btn--icon" data-devscan="1" aria-label="${t('Искать устройства')}">${ic(I.link, 'fm-i--l')}</button>` })
+  return nav(t('Очередь загрузки'), { back: true })
     + `<div class="m-scroll" id="scroll">
-        ${large(t('Диктофоны'), phraseDevOnline(on, DEVICES.length))}
+        ${large(t('Очередь загрузки'), phraseDevOnline(on, DEVICES.length))}
+        <p class="m-pad m-cap m-dim">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
         ${DEVICES.map(devBlock).join('')}
+        ${lostDeviceHtml('m')}
         <div class="m-bottom"></div>
       </div>`;
 }
@@ -1877,6 +1825,7 @@ function screenOutbox() {
         : `<div class="m-empty">${ic(I.queue, 'fm-i--xl m-empty__icon')}
             <h2 class="m-title">${t('Очередь пуста')}</h2>
             <p class="m-sub">${t('Все записи приняты сервером организации.')}</p></div>`}
+        ${crmBannerHtml(FILES.find(x => recListKind(x) === 'queued') || FILES[0], 'm')}
         <p class="m-pad m-cap m-dim">${t('Очередь ничего не удаляет: пока сервер не подтвердил приём, запись остаётся здесь. Недописанный файл встаёт в очередь целиком, хвост дошлём отдельно.')}</p>
         <div class="m-grouphead m-cap">${t('Место')}</div>
         <div class="m-group">
@@ -1945,8 +1894,7 @@ const SHEETS = {
             <p class="m-hint__b m-sub">${t(h.body)}</p>
             ${h.note ? `<p class="m-hint__b m-cap m-dim" style="margin-top:var(--space-xs)">${t(h.note)}</p>` : ''}
             <p class="m-hint__src m-cap">${ic(I.book, 'fm-i--s')} ${t(h.src)}</p>
-          </div>`).join('')
-        : `<p class="m-pad m-sub m-dim">${t('За эту встречу подсказок ещё не было.')}</p>`}
+            ${crmHintHtml(h, 'm')}</div>`).join('') : `<p class="m-pad m-sub m-dim">${t('За эту встречу подсказок ещё не было.')}</p>`}
       </div>
       <div class="fm-sheet__foot">
         <button class="fm-btn fm-btn--block" data-closesheet="1">${t('Закрыть')}</button>
@@ -1968,20 +1916,16 @@ const SHEETS = {
   askscope: () => sheet(t('Где искать'), [item(I.folder, 'По всем записям', 'data-askfolder=""', !M.ask.folder)]
     .concat(FOLDERS.map(f => item(I.folder, f.name, `data-askfolder="${esc(f.name)}"`, M.ask.folder === f.name)))),
   addtpl: () => sheet(t('Шаблон разбора'), TEMPLATES.map(tpl => item(I.tpl, tpl.t, `data-addtpl="${esc(tpl.t)}"`))),
+  pickcard: () => sheet(t('Указать карточку'),
+    CARDS.map(c => item(I.user, c.name, `data-bindcard="${esc(M.sheetId || '')}" data-card="${esc(c.id)}"`))),
   row: () => {
     const f = FILES.find(x => x.id === M.sheetId);
     if (!f) return sheet('', []);
     return sheet(esc(f.title), f.deleted
       ? [item(I.folder, 'Восстановить', `data-restore="${f.id}"`), item(I.trash, 'Удалить навсегда', `data-purge="${f.id}"`, false, true)]
-      : [...(M.screen === 'note' && M.tab !== 'transcript' && M.tab !== 'marks'
-             ? [item(I.ai, 'Сформировать заново', 'data-regen="1"'),
-                ...(M.tab !== 'summary' ? [item(I.trash, 'Удалить разбор', 'data-deltab="1"')] : [])]
-             : []),
-         item(I.pencil, 'Переименовать', `data-rename="${f.id}"`),
+      : [item(I.pencil, 'Переименовать', `data-rename="${f.id}"`),
          item(I.folder, 'Переместить в папку', `data-movesheet="${f.id}"`),
-         item(I.share, 'Поделиться', 'data-share="1"'),
          item(I.export, 'Выгрузить расшифровку (.txt)', `data-export="transcript"`),
-         item(I.book, 'Выгрузить конспект (.txt)', `data-export="summary"`),
          item(I.trash, 'В корзину', `data-todelete="${f.id}"`, false, true)]);
   },
   move: () => sheet(t('Переместить в папку'),
@@ -2108,7 +2052,8 @@ function recTick(on) {
       M.rec.lines.push({ who: s.who, role: s.role, text: s.text, at: M.rec.sec });
       /* Подсказка идёт СЛЕДОМ за репликой, на которую отвечает. Правило одно на
          два прототипа и живёт в общей части (`hintsAfter`). */
-      if (LINK.live) M.rec.hints = hintsAfter(ORG.hintProfile, M.rec.lines.length);
+      if (LINK.live && SESSION.hintsOn) M.rec.hints = hintsAfter(ORG.hintProfile, M.rec.lines.length);
+      else M.rec.hints = [];
       render(); return;                               // строка пришла — перерисовываем целиком
     }
     if ($('#recTime')) $('#recTime').textContent = fmtTotal(M.rec.sec);
@@ -2118,7 +2063,12 @@ function recTick(on) {
    Android, напоминание о встрече). Место кончилось — запись не начинается, и
    отказ называет причину. */
 function recStart(auto) {
+  if (!ORG.server) { toast(t('Сервер организации не задан. Запись не начинается.')); return; }
   if (diskBlocked()) { toast(diskWhy()); return; }
+  if (auto) {
+    SESSION.recCard = CARDS[0];
+    SESSION.recBind = 'calendar';
+  }
   M.rec = { on: true, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: auto || null, hints: [] };
   recTick(true); render();
 }
@@ -2133,13 +2083,13 @@ function recCancel(falseAlarm) {
 function recStop() {
   const sec = Math.max(1, M.rec.sec), d = new Date();
   const seg = M.rec.lines.map(l => T(fmtTotal(Math.max(0, l.at - REC_STEP)), l.who, l.role, l.text));
-  const n = {
+  const n = recNewFile({
     id: 'r' + d.getTime().toString(36), title: t('Запись от') + ' ' + fmtDate(d.getTime()),
     ts: d.getTime(), sec, at: 0, folder: null, src: 'Телефон', custom: [],
-    /* Что показали живой расшифровкой, то и сохранили; конспект ещё предстоит
-       сформировать — это отдельный шаг на вкладке «Конспект». */
-    transcript: seg, transcriptEmpty: seg.length ? undefined : true, summaryEmpty: true
-  };
+    transcript: seg, transcriptEmpty: seg.length ? undefined : true, summaryEmpty: true,
+    card: SESSION.recCard ? { id: SESSION.recCard.id, name: SESSION.recCard.name } : null,
+    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null
+  });
   FILES.unshift(n);
   if (M.rec.marks.length) M.marks[n.id] = M.rec.marks.slice();
   applyLang();
@@ -2154,9 +2104,8 @@ function recOverlay() {
   const bars = Array.from({ length: 42 }, (_, i) => `<span style="animation-delay:${(i * 37) % 880}ms"></span>`).join('');
   if (M.rec.on) {
     const lines = M.rec.lines;
-    const cur = lines.length - 1;
     const mand = isMandatory();
-    const last = M.rec.hints[M.rec.hints.length - 1];
+    const last = (SESSION.hintsOn && LINK.live) ? M.rec.hints[M.rec.hints.length - 1] : null;
     const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
     return `
     <div class="m-rec">
@@ -2183,6 +2132,10 @@ function recOverlay() {
       <!-- ГЛАВНОЕ ОТЛИЧИЕ ПРОДУКТА: подсказка приходит во время разговора.
            Показана последняя, остальные — по нажатию, шторкой. -->
       <div class="m-hintbox">
+        <div style="display:flex;align-items:center;gap:var(--space-m);margin:0 0 var(--size-3x)">
+          <span class="m-cap" style="flex:1 1 auto">${t(SESSION.hintsOn ? 'Подсказки включены' : 'Живых подсказок нет')}</span>
+          <button class="fm-btn fm-btn--sm" data-hintstog="1">${t(SESSION.hintsOn ? 'Выкл' : 'Вкл')}</button>
+        </div>
         ${last
           ? `<button class="m-hint" data-sheet="hints">
               <div class="m-hint__head">
@@ -2193,23 +2146,25 @@ function recOverlay() {
               <p class="m-hint__b m-sub">${t(last.body)}</p>
               ${last.note ? `<p class="m-hint__b m-cap m-dim" style="margin-top:var(--space-xs)">${t(last.note)}</p>` : ''}
               <p class="m-hint__src m-cap">${ic(I.book, 'fm-i--s')} ${t(last.src)}</p>
+              ${crmHintHtml(last, 'm')}
             </button>`
-          : `<div class="m-hint__wait m-cap">${ic(LINK.live ? I.bulb : I.alert, 'fm-i--s')}
-              <span>${t(LINK.live
+          : `<div class="m-hint__wait m-cap">${ic(LINK.live && SESSION.hintsOn ? I.bulb : I.alert, 'fm-i--s')}
+              <span>${t(!SESSION.hintsOn
+                ? 'Подсказки выключены — запись идёт.'
+                : LINK.live
                 ? 'Слушаем разговор — подсказка придёт, когда будет чем помочь'
                 : 'Связи с сервером нет: запись доедет, подсказки опоздают')}</span></div>`}
       </div>
       <div class="m-rec__live" id="recLive">
         ${lines.length ? lines.map((l, i) => `<p class="m-rec__line m-body">
-            <b>${esc(l.who)}</b>${M.rec.marks.includes(i) ? ' ' + ic(I.mark, 'fm-i--s') : ''}<br>${esc(l.text)}</p>`).join('')
+            <b>${esc(l.who)}</b><br>${esc(l.text)}</p>`).join('')
           : `<div class="m-rec__wait m-sub">${ic(I.spin, 'fm-i--s')} ${t('Слушаем — текст появится, как только начнут говорить')}</div>`}
       </div>
       <div class="m-rec__bottom">
         <div class="m-level" style="${M.rec.paused ? 'opacity:.25' : ''}">${bars}</div>
-        <p class="m-rec__note m-cap" style="margin:0">${t('Сохраним в «Без папки», источник — телефон')}</p>
+        <p class="m-rec__note m-cap" style="margin:0">${recSourceLine()}</p>
         <div class="m-rec__acts">
-          <button class="m-rec__side" data-recmark="1" ${cur < 0 ? 'disabled' : ''}
-            aria-label="${t('Отметить это место')}">${ic(I.mark, 'fm-i--l')}<span>${t('Отметить')}</span></button>
+          <span class="m-rec__side" aria-hidden="true"></span>
           <button class="m-rec__stop" data-recstop="1" aria-label="${t('Остановить')}">${ic(I.stop, 'fm-i--l')}</button>
           <button class="m-rec__side" data-recpause="1">
             ${ic(mand ? I.lock : (M.rec.paused ? I.mic : I.pause), 'fm-i--l')}<span>${M.rec.paused ? t('Продолжить') : t('Пауза')}</span></button>
@@ -2232,10 +2187,12 @@ function recOverlay() {
       <div class="m-rec__done">
         <div class="m-rec__head m-sub">${ic(I.check, 'fm-i--s')} ${t('Запись сохранена')}</div>
         <div class="m-rec__time m-num">${f ? f.total : '—'}</div>
-        <p class="m-rec__note m-cap" style="margin:0">${t('Расшифровка уже есть, конспект соберём по кнопке')}</p>
+        <p class="m-rec__note m-cap" style="margin:0">${t('Расшифровка уже есть')}</p>
         <p class="m-rec__note m-cap" style="margin:0">${t(LINK.live
           ? 'Запись уходит на сервер организации.'
           : 'Связи нет — запись встала в очередь отправки и уйдёт сама.')}</p>
+        ${f ? crmBannerHtml(f, 'm') : ''}
+        ${f ? recCardActionsHtml(f.id, 'm') : ''}
         <div>
           <button class="fm-btn fm-btn--primary" data-file="${M.rec.saved}">${t('Открыть запись')}</button>
           <div style="height:var(--size-3x)"></div>
@@ -2250,8 +2207,6 @@ function recOverlay() {
 /* ============================== ОТРИСОВКА ================================= */
 const TABS = [
   ['folders', 'Записи', I.files],
-  ['ask', 'Спросить', I.ai],
-  ['templates', 'Шаблоны', I.tpl],
   ['more', 'Ещё', I.more]
 ];
 /* Какие экраны лежат внутри какого раздела: подсветка раздела не должна гаснуть
@@ -2266,6 +2221,7 @@ const SCREENS = { folders: screenFolders, files: screenFiles, note: screenNote, 
    на чужих разделах её нет, иначе она читается как «записать шаблон». */
 const FAB_ON = ['folders', 'files'];
 function render() {
+  if (M.screen === 'outbox') M.screen = 'folders';
   const fab = FAB_ON.includes(M.screen)
     ? `<button class="m-fab" data-recnow="1" aria-label="${t('Записать встречу')}">${ic(I.mic, 'fm-i--l')}</button>` : '';
   let body = (SCREENS[M.screen] || screenFolders)();
@@ -2314,7 +2270,12 @@ function render() {
 }
 
 /* ================================ СОБЫТИЯ ================================= */
-function goScreen(k) { stopPlay(); M.screen = k; render(); }
+function goScreen(k) {
+  stopPlay();
+  if (k === 'ask' || k === 'templates' || k === 'membership' || k === 'search' || k === 'outbox') k = 'folders';
+  M.screen = k;
+  render();
+}
 /* Куда ведёт возврат — один владелец на кнопку в панели и на жест от края. */
 const UP = { set: 'more', membership: 'more', note: 'files', files: 'folders', search: 'folders',
              devices: 'more', outbox: 'more' };
@@ -2368,8 +2329,7 @@ function openFile(id, at, q) {
   const seeked = at !== undefined && at !== null && at !== '';
   if (seeked) f.at = Math.max(0, Math.min(f.sec, +at));
   M.find = q || ''; M.findOpen = !!q;
-  M.tab = seeked || q ? 'transcript'
-    : hasSummary(f) ? 'summary' : 'transcript';
+  M.tab = 'transcript';
   M.rec.saved = null;
   render();
 }
@@ -2471,6 +2431,21 @@ document.addEventListener('click', e => {
   }
   if (hit('[data-recstop]')) { recStop(); return; }
   if (hit('[data-recnew]')) { recStart(); return; }
+  if (hit('[data-hintstog]')) {
+    SESSION.hintsOn = !SESSION.hintsOn;
+    if (!SESSION.hintsOn) M.rec.hints = [];
+    render(); return;
+  }
+  const pc = hit('[data-pickcard]');
+  if (pc) { openSheet('pickcard', pc.dataset.pickcard); return; }
+  const bc = hit('[data-bindcard]');
+  if (bc) {
+    recBindCard(bc.dataset.bindcard, bc.dataset.card);
+    closeSheet(); render(); return;
+  }
+  if (hit('[data-clearsessioncard]')) { recClearSessionCard(); render(); return; }
+  const nc = hit('[data-notclient]');
+  if (nc) { recMarkNotClient(nc.dataset.notclient); render(); return; }
   /* Стрелка на экране сохранённой записи: закрываем слой и показываем список,
      где новая запись стоит первой. */
   if (hit('[data-recdone]')) {
@@ -2502,28 +2477,6 @@ document.addEventListener('click', e => {
     const ids = devRecs(d.id).map(r => r.id);
     if (!ids.length) { toast('Новых записей на диктофоне нет', true); return; }
     devTake(ids); return;
-  }
-  const dl = hit('[data-devlisten]');
-  if (dl) {
-    const d = devById(dl.dataset.devlisten);
-    if (!d || d.link === 'off') { toast('Диктофон не на связи — живой звук недоступен'); return; }
-    M.listen = M.listen === d.id ? null : d.id;
-    render(); toast(M.listen ? t('Слушаем живой звук с') + ' ' + d.name : 'Прослушивание остановлено', true); return;
-  }
-  const dr = hit('[data-devrec]');
-  if (dr) {
-    const d = devById(dr.dataset.devrec);
-    if (!d || d.link === 'off') { toast('Диктофон не на связи — командовать записью нечем'); return; }
-    DEV_RECS.push({ id: 'dv' + Date.now().toString(36), dev: d.id,
-      title: t('Запись с') + ' ' + d.name, sec: 60, ts: Date.now() });
-    render(); toast('Запись на диктофоне начата', true); return;
-  }
-  const dc = hit('[data-devclock]');
-  if (dc) {
-    const d = devById(dc.dataset.devclock);
-    if (!d) return;
-    if (d.link === 'off') { toast('Диктофон не на связи — часы сверим, когда он ответит'); return; }
-    d.clockOk = true; render(); toast('Часы диктофона сверены с телефоном', true); return;
   }
   if (hit('[data-devscan]')) { toast('Ищем диктофоны рядом: включите устройство и держите его в метре от телефона'); return; }
 
@@ -2561,7 +2514,8 @@ document.addEventListener('click', e => {
     const k = ot.dataset.orgtoggle;
     ORG[k] = !ORG[k]; render();
     if (k === 'privateCalls') toast(ORG.privateCalls ? PRIVATE_WHY : 'Приватные звонки запрещены сервером: записывается любой разговор');
-    else toast(ORG.diarization ? 'Разделение голосов включено' : 'Разделение голосов выключено: говорящий будет один');
+    else if (k === 'diarization') toast(ORG.diarization ? 'Разделение голосов включено' : 'Разделение голосов выключено: говорящий будет один');
+    else if (k === 'server') toast(ORG.server ? t('Сервер организации задан') : t('Сервер организации не задан. Запись не начинается.'));
     return;
   }
   const rv = hit('[data-revoke]');

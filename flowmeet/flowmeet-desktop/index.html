@@ -830,12 +830,13 @@ html.has-menu .fm-tip:hover::after { opacity: 0; }
 .fm-chat__foot { display: flex; align-items: center; gap: var(--space-m); padding: var(--padding-l); border-top: 1px solid var(--line-divider); }
 
 /* ─────────────── ОКНО «ПАРАМЕТРЫ» И ЗНАЧОК У ЧАСОВ ──────────────────────── */
-.fm-prefs { width: 100%; max-width: 720px; height: min(560px, calc(100vh - 140px)); }
+.fm-prefs { width: 100%; max-width: 640px; height: min(640px, calc(100vh - 140px)); }
 .fm-prefs__body { flex: 1 1 auto; display: flex; min-height: 0; }
-.fm-prefs__nav {
-  width: 212px; flex: 0 0 auto; display: flex; flex-direction: column; min-height: 0;
-  padding: var(--padding-m); background: var(--bg-container-complimentary);
-  border-right: 1px solid var(--line-divider);
+.fm-prefs__nav { display: none; }
+.fm-prefs__who {
+  display: flex; align-items: center; gap: var(--space-m);
+  margin-bottom: var(--size-6x); padding-bottom: var(--size-4x);
+  border-bottom: 1px solid var(--line-divider);
 }
 .fm-prefs__navscroll { flex: 1 1 auto; overflow-y: auto; }
 .fm-prefs__acct {
@@ -845,6 +846,7 @@ html.has-menu .fm-tip:hover::after { opacity: 0; }
 }
 .fm-prefs__acct:hover { background: var(--bg-container-hover); }
 .fm-prefs__pane { flex: 1 1 auto; overflow-y: auto; padding: var(--size-6x); }
+#prefs-recording, #prefs-org, #prefs-notify, #prefs-about { margin-top: var(--size-6x); }
 /* В записи виджет — экран подсказки, поэтому шире: карточка подсказки в
    320 px не читается. */
 .fm-tray.is-rec { width: 420px; }
@@ -959,7 +961,9 @@ html[data-os="mac"] .fm-lights { display: flex; align-items: center; gap: var(--
    Ширину зоны задаёт render(): у списка файлов это навигация, у открытой
    записи — колонка записей, у окна «Параметры» — его собственная панель. */
 html[data-os="mac"] .fm-win { --fm-macleft: var(--fm-nav-w); border-radius: var(--fm-mac-radius); }
-html[data-os="mac"] .fm-prefs { --fm-macleft: 212px; }
+html[data-os="mac"] .fm-prefs { --fm-macleft: 0; }
+html[data-os="mac"] .fm-prefs .fm-chrome { background: var(--bg-container); }
+html[data-os="mac"] .fm-prefs .fm-chrome::before { display: none; }
 html[data-os="mac"] .fm-chrome {
   position: relative; height: var(--size-7x); padding-left: var(--padding-l); border-bottom: none;
   background: linear-gradient(to right,
@@ -1189,7 +1193,8 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
 </noscript>
 
 
-<aside class="fm-map" id="featureMap" aria-label="Функционал прототипа"></aside>
+
+
 <div class="fm-stage">
 <div class="fm-stamp text-body-3">
   <span class="fm-tag fm-tag--orange">Прототип · выброс</span>
@@ -1202,7 +1207,6 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
   </span>
   <span class="fm-seg" id="viewSwitch">
     <button data-view="app" class="is-on">Приложение</button>
-    <button data-view="prefs">Параметры</button>
     <button data-view="tray">Виджет FlowMeet</button>
     <button data-view="spec">Постановка</button>
   </span>
@@ -1547,9 +1551,25 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
   </div>
 </div>
 
+<div class="fm-scrim" id="scrimPick">
+  <div class="fm-modal fm-modal--sm" role="dialog" aria-modal="true" aria-label="Указать карточку">
+    <div class="fm-modal__head">
+      <h2 class="text-header-2">Указать карточку</h2>
+      <button class="fm-btn fm-btn--text fm-btn--icon" data-close="scrimPick" aria-label="Закрыть">
+        <svg class="fm-i" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="fm-modal__body" id="pickCardBody"></div>
+    <div class="fm-modal__foot">
+      <button class="fm-btn" data-close="scrimPick">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <!-- Общая часть двух прототипов: данные, счёт, язык. Своей копии нет. -->
-<script src="../flowmeet-shared/data.js"></script>
-<script src="../flowmeet-shared/sa-draft.js"></script>
+<script src="../flowmeet-shared/data.js?v=0922j"></script>
+<script src="../flowmeet-shared/sa-c25.js?v=0922j"></script>
+<script src="../flowmeet-shared/sa-draft.js?v=0922j"></script>
 
 <script>
 /* СТАРАЯ КОПИЯ ОБЩЕЙ ЧАСТИ — самая частая причина «страница не грузит»: браузер
@@ -1557,12 +1577,15 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
    падает, экран остаётся пустым, и причина не видна — обновление с очисткой кэша
    чинит, но догадаться про это нельзя. Проверяем ЗАРАНЕЕ и называем причину. */
 (function () {
-  var need = { devSpace: 'память диктофона', hintsAfter: 'подсказки за репликой',
+  var need = { hintsAfter: 'подсказки за репликой',
                recLinesAt: 'ход живой расшифровки', linesForHints: 'ссылка на подсказки',
-               devFreeGb: 'свободное место', num: 'вывод чисел', t: 'перевод строк',
+               num: 'вывод чисел', t: 'перевод строк',
                wrapRoadmap: 'яркость сценариев к разработке',
                featureMapHtml: 'список функционала прототипа',
-               saDraftHtml: 'черновик постановки' };
+               saDraftHtml: 'черновик постановки',
+               recListTagHtml: 'метка записи в списке',
+               recCardActionsHtml: 'указать карточку',
+               srcNavLabel: 'подпись фильтра источника' };
   var miss = Object.keys(need).filter(function (n) {
     /* typeof по необъявленному имени не падает, поэтому проверка безопасна. */
     return eval('typeof ' + n) !== 'function';
@@ -1584,7 +1607,7 @@ const S = {
   screen: 'files',                        // files | note | home | ask | templates | membership
   scope: { kind: 'all', value: null },
   folded: {}, listOff: false,
-  fileId: 'demo', tab: 'summary', generated: {},
+  fileId: 'demo', tab: 'transcript', generated: {},
   sort: 'date',                           // date | name | dur
   sortDir: 'desc',                        // asc | desc — порядок активного столбца
   sel: [],                                // id выбранных записей текущего раздела
@@ -1596,7 +1619,7 @@ const S = {
   voice: false, memOpen: false, chat: [], keysAsk: null,     // мелкие состояния настроек
   keys: { shot: 'Alt Shift C', mark: 'Alt Shift H' },        // сочетания клавиш
   meetApps: { Teams: true, Zoom: true, 'Браузер': false },   // где искать встречи
-  setPane: 'account', expPane: 'autoflow', prefsPane: 'general',
+  setPane: 'account', expPane: 'autoflow', prefsPane: 'account',
   tplTab: 'discover', tplCat: null, newFolder: { name: '', color: 0 },
   /* ─ добавлено 27.08.2026 по спеке «Сверка прототипов с описанием работы» ─
      devId — открытый диктофон на экране устройств; detector — состояние
@@ -1703,20 +1726,19 @@ const unsel = ids => { S.sel = S.sel.filter(x => !ids.includes(x)); };
 const isGen = (id, tab) => !!S.generated[id + ':' + tab];
 const scopeTitle = () => S.scope.kind === 'all' ? 'Все файлы'
   : S.scope.kind === 'unfiled' ? 'Без папки' : S.scope.kind === 'trash' ? 'Корзина'
-  : S.scope.kind === 'search' ? 'Поиск' : S.scope.value;
+  : S.scope.kind === 'search' ? 'Поиск'
+  : S.scope.kind === 'src' ? srcNavLabel(S.scope.value)
+  : S.scope.value;
 
 /* Полоса расхода. Пространство выбрано личное, поэтому и лимит показывается
    личный: «квота организации» — это надстоящая величина, из которой личный
    лимит выделяет администратор, и подписывать ею личное пространство неверно
    (замечание владельца 27.08.2026). Числа — из stats(), не из разметки. */
 function renderQuota() {
-  const q = stats();
-  $('#quota').innerHTML = `
-    <div class="fm-quota__head" data-go="membership" style="cursor:pointer">
-      <span class="text-subheader-2">Мой лимит</span>
-    </div>
-    <div class="fm-quota__rail"><div class="fm-quota__fill" style="width:${q.leftPct}%"></div></div>
-    <p class="fm-quota__note text-caption-2" style="margin:0">${phraseQuota(q)}</p>`;
+  /* Квота в продукте не показывается: лимиты минут сняли. Экран «Квота и
+     лимиты» остаётся только в карте функционала (к разработке). */
+  const el = $('#quota');
+  if (el) { el.innerHTML = ''; el.style.display = 'none'; }
 }
 
 /* ============================ ПАНЕЛЬ НАВИГАЦИИ ============================ */
@@ -1738,24 +1760,14 @@ function navGroup(key, label, add, body) {
     <div class="fm-groupbody ${closed ? 'is-hidden' : ''}">${body}</div>`;
 }
 function renderNav() {
+  /* Два разных смысла, не дубль: сверху экран железа (забрать файлы, ещё на
+     устройстве), в группе «Откуда запись» — фильтр уже попавших в список. */
   const onFiles = S.screen === 'files';
   const act = (k, v) => onFiles && S.scope.kind === k && S.scope.value === (v || null);
   $('#navScroll').innerHTML = `
-    ${navItem({ icon: I.search, text: 'Поиск', attrs: 'data-scope="search" data-value=""' })}
-    ${navItem({ icon: I.home, text: 'Главная', active: S.screen === 'home', attrs: 'data-go="home"' })}
-    ${navItem({ icon: I.ai, text: 'Спросить ИИ', active: S.screen === 'ask', attrs: 'data-go="ask"' })}
-    ${navItem({ icon: I.tpl, text: 'Шаблоны', active: S.screen === 'templates', attrs: 'data-go="templates"' })}
-    ${navItem({ icon: I.explore, text: 'Возможности', attrs: 'data-open="scrimExplore"' })}
-    <hr>
-    <!-- Устройство — продукт направления, поэтому диктофоны стоят в навигации
-         наравне с записями, а не прячутся в настройках. Счётчик — записи,
-         которые лежат на устройствах и ещё не забраны; диктофонов при этом два,
-         и без подписи число читалось как их количество. -->
-    ${navItem({ icon: I.device, text: 'Диктофоны', count: DEV_RECS.length,
-                countLabel: 'Новых записей на диктофонах',
+    ${navItem({ icon: I.device, text: t('Очередь загрузки'), count: DEV_RECS.length,
+                countLabel: t('Ждут загрузки на сервер компании'),
                 active: S.screen === 'devices', attrs: 'data-go="devices"' })}
-    ${navItem({ icon: I.queue, text: 'Отправка', count: QUEUE.length,
-                active: S.screen === 'outbox', attrs: 'data-go="outbox"' })}
     <hr>
     ${navItem({ icon: I.folder, text: 'Все файлы', count: cnt('all'), active: act('all'), attrs: 'data-scope="all"' })}
     ${navItem({ icon: I.unfiled, text: 'Без папки', count: cnt('unfiled'), active: act('unfiled'), attrs: 'data-scope="unfiled"' })}
@@ -1764,7 +1776,7 @@ function renderNav() {
         dot: f.color, text: f.name, count: cnt('folder', f.name),
         active: act('folder', f.name), attrs: `data-scope="folder" data-value="${esc(f.name)}"` })).join(''))}
     ${navGroup('srcs', 'Откуда запись', false, srcs().map(n => navItem({
-        icon: I.device, text: n, count: cnt('src', n),
+        icon: I.wave, text: srcNavLabel(n), count: cnt('src', n),
         active: act('src', n), attrs: `data-scope="src" data-value="${esc(n)}"` })).join(''))}`;
 }
 
@@ -1788,24 +1800,22 @@ function renderTop() {
     <nav class="fm-crumbs text-body-2">${crumb}</nav>
     <span style="flex:1 1 auto"></span>
     ${note ? `
-      <button class="fm-btn" data-share="1">${ic(I.share)} Поделиться</button>
       <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Выгрузить файлом" data-exportmenu="1">${ic(I.export)}</button>
       <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Ещё" data-notemenu="1">${ic(I.more)}</button>` : ''}
-    ${OS === 'mac' ? '' : `<button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Настройки" data-open="scrimSettings">${ic(I.gear)}</button>`}
+    ${OS === 'mac' ? '' : `<button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Параметры" data-view="prefs">${ic(I.gear)}</button>`}
     <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Светлая / тёмная" id="btnTheme">${ic(I.moon)}</button>`;
 }
 
 /* ============================ ВКЛАДКИ ЗАПИСИ ============================== */
-const tabsOf = f => [{ id: 'transcript', name: 'Расшифровка' }, { id: 'summary', name: 'Конспект' },
-                     ...f.custom.map(c => ({ id: c.id, name: c.name }))];
+const tabsOf = f => [{ id: 'transcript', name: 'Расшифровка' }];
 function renderTabs() {
   const box = $('#tabs');
   if (S.screen !== 'note' || !file()) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  if (!tabsOf(file()).some(tab => tab.id === S.tab)) S.tab = 'transcript';
   box.style.display = '';
   box.innerHTML = tabsOf(file()).map(tab => `
     <button class="fm-tab ${tab.id === S.tab ? 'is-active' : ''}" data-tab="${tab.id}">${esc(tab.name)}
-      ${tab.id === S.tab && tab.id !== 'transcript' ? ic(I.caretD, 'fm-i--s fm-tab__caret') : ''}</button>`).join('')
-    + `<button class="fm-tab fm-tab--add fm-tip" id="tabAdd" data-tip="Добавить разбор по шаблону">${ic(I.plus, 'fm-i--s')}</button>`;
+      ${tab.id === S.tab && tab.id !== 'transcript' ? ic(I.caretD, 'fm-i--s fm-tab__caret') : ''}</button>`).join('');
 }
 
 /* ============================ СПИСОК ЗАПИСЕЙ =============================== */
@@ -1819,6 +1829,7 @@ function renderList() {
     <button class="fm-row ${f.id === S.fileId ? 'is-active' : ''}" data-file="${f.id}">
       <span class="fm-row__title text-body-2">${esc(f.title)}</span>
       <span class="fm-row__meta text-caption-2">
+        ${recListTagHtml(f)}
         <span>${esc(fmtShort(f.ts))}</span>
         <span class="fm-sep">|</span><span>${esc(f.dur)}</span>
       </span>
@@ -1912,6 +1923,7 @@ function screenFiles() {
             <td><span class="fm-tbl__name">
               <span class="fm-tbl__check${isSel(f.id) ? ' is-on' : ''}" data-check="${f.id}">${ic(I.check, 'fm-i--s')}</span>
               <span class="fm-tbl__title">${esc(f.title)}</span>
+              ${recListTagHtml(f)}
             </span></td>
             <td class="fm-tbl__col-dur">${esc(f.dur)}</td>
             <td class="fm-tbl__col-date">${esc(f.date)}</td>
@@ -1944,7 +1956,7 @@ function screenHome() {
       </div>
       <table class="fm-tbl text-body-2"><tbody>
         ${r.map(f => `<tr data-file="${f.id}">
-          <td><span class="fm-tbl__title">${esc(f.title)}</span></td>
+          <td><span class="fm-tbl__name"><span class="fm-tbl__title">${esc(f.title)}</span>${recListTagHtml(f)}</span></td>
           <td class="fm-tbl__col-dur">${esc(f.dur)}</td>
           <td class="fm-tbl__col-date">${esc(f.date)}</td>
           <td class="fm-tbl__col-act"><span class="fm-tbl__acts">
@@ -2204,9 +2216,6 @@ function player(f) {
         <div class="fm-player__right">
           <button class="fm-btn fm-btn--text fm-btn--sm fm-tip fm-tip--end" data-tip="Скорость воспроизведения" id="btnSpeed"
             style="min-width:var(--size-12x);font-variant-numeric:tabular-nums">${fmtSpeed(S.speed)}</button>
-          <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Обрезать аудио" data-trim="1">
-            <svg class="fm-i fm-i--l" viewBox="0 0 20 20"><path d="M6 3v11a3 3 0 0 0 3 3h8M3 6h11a3 3 0 0 1 3 3v8"/></svg>
-          </button>
         </div>
       </div>
     </div>`;
@@ -2303,6 +2312,8 @@ function screenNote() {
             ? 'Разделение голосов: подключено'
             : 'Разделение голосов выключено — говорящий один')}</span>
         </div>
+        ${crmBannerHtml(f, 'fm')}
+        ${recCardActionsHtml(f.id, 'fm')}
         ${segs.map(s => `<div class="fm-seg-row">
           <div class="fm-seg-row__head">
             <span class="fm-seg-row__time text-caption-2">${s.time}</span>
@@ -2347,6 +2358,7 @@ function hintCard(h, fresh) {
       <p class="fm-hint__b text-body-3">${t(h.body)}</p>
       ${h.note ? `<p class="fm-hint__n text-caption-2">${t(h.note)}</p>` : ''}
       <p class="fm-hint__src text-caption-2">${ic(I.book, 'fm-i--s')} ${t(h.src)}</p>
+      ${crmHintHtml(h, 'fm')}
     </div>`;
 }
 /* Лента подсказок идущей записи: свежая сверху. Пока подсказок нет — честное
@@ -2354,27 +2366,32 @@ function hintCard(h, fresh) {
    что подсказки опоздают: звук идёт на сервер, он их и считает. */
 function hintsBox() {
   const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
-  const list = S.rec.hints.slice().reverse();
+  const live = LINK.live && SESSION.hintsOn;
+  const list = live ? S.rec.hints.slice().reverse() : [];
   return `
     <div class="fm-hints">
       <div class="fm-quota__head" style="margin-bottom:var(--space-xs)">
         <span class="text-subheader-2">${t('Подсказки')} · ${t(prof.name)}</span>
-        <span class="fm-tag">${S.rec.hints.length}</span>
+        <button class="fm-toggle ${SESSION.hintsOn ? 'is-on' : ''}" data-hintstog="1" aria-label="${t(SESSION.hintsOn ? 'Подсказки включены' : 'Живых подсказок нет')}"></button>
       </div>
       <p class="fm-hint__n text-caption-2" style="margin:0 0 var(--space-m)">${t('Профиль задаёт')} ${t(prof.owner)}</p>
-      ${!LINK.live ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
+      ${!SESSION.hintsOn ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
+        <span>${t('Подсказки выключены — запись идёт.')}</span></div>` : ''}
+      ${SESSION.hintsOn && !LINK.live ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
         <span>${t('Связь с сервером не открылась: запись доедет, подсказки опоздают.')}</span></div>` : ''}
       <div class="fm-hints__list">
         ${list.length
           ? list.map((h, i) => hintCard(h, i === 0)).join('')
-          : `<div class="fm-hints__empty text-caption-2">${ic(I.spin, 'fm-i--s')} ${t('Слушаем разговор — подсказка придёт, когда будет чем помочь')}</div>`}
+          : `<div class="fm-hints__empty text-caption-2">${ic(I.spin, 'fm-i--s')} ${t(live
+            ? 'Слушаем разговор — подсказка придёт, когда будет чем помочь'
+            : 'Живых подсказок нет')}</div>`}
       </div>
     </div>`;
 }
 
 /* ═════════ ДИКТОФОНЫ ══════════════════════════════════════
    Продукт направления — устройство, поэтому диктофон здесь предмет разговора,
-   а не периферия: заряд, свободное место, сколько записей ждёт, на связи ли он.
+   а не периферия. Контракт — call-recorder: забрать файл. Заряд и флеш не обещаем.
    Записи забираются по-настоящему — попадают в общий список с источником
    «Диктофон». antd: <Card> + <Descriptions> + <List>. */
 const linkTag = d => d.link === 'off'
@@ -2383,14 +2400,6 @@ const linkTag = d => d.link === 'off'
 function devCard(d) {
   const recs = devRecs(d.id);
   const off = d.link === 'off';
-  /* Свободное место и вес записей выводятся из самих записей устройства: пока
-     число стояло отдельно, оно не менялось после забора записей. */
-  const free = devFreeGb(d), recsMb = devRecsMb(d.id);
-  /* Доля СВОБОДНОГО места: полоса залита тем же, что стоит в подписи «Свободно
-     7,77 из 7,8 ГБ». Стояла доля занятого — при почти пустом диктофоне полоса
-     была пустой, и первое прочтение выходило «места нет» (правка 28.08.2026).
-     Тот же счёт, что у заряда рядом. */
-  const freePct = Math.max(0, Math.min(100, Math.round(free / d.totalGb * 100)));
   return `
     <div class="fm-dev ${off ? 'is-off' : ''}">
       <div class="fm-dev__head">
@@ -2400,29 +2409,7 @@ function devCard(d) {
         <span style="flex:1 1 auto"></span>
         <span class="text-caption-2" style="color:var(--text-complimentary)"><span>${t('серийный номер')}</span> ${esc(d.serial)}</span>
       </div>
-      <div class="fm-dev__grid">
-        <div>
-          <p class="fm-tile__l text-caption-2">${t('Заряд')}</p>
-          <p class="fm-tile__v">${d.battery}%</p>
-          <div class="fm-bat"><div class="fm-bat__fill ${d.battery < 20 ? 'is-low' : ''}" style="width:${d.battery}%"></div></div>
-        </div>
-        <div>
-          <p class="fm-tile__l text-caption-2">${t('Свободно')}</p>
-          <p class="fm-tile__v"><span>${devSpace(d)}</span> <span>${t('ГБ')}</span></p>
-          <div class="fm-bat"><div class="fm-bat__fill ${freePct < 20 ? 'is-low' : ''}" style="width:${freePct}%"></div></div>
-          <p class="text-caption-2" style="margin:var(--space-xs) 0 0;color:var(--text-complimentary)">
-            <span>${t('записи на устройстве занимают')}</span> ${num(recsMb, 1)} <span>${t('МБ')}</span></p>
-        </div>
-        <div>
-          <p class="fm-tile__l text-caption-2">${t('Новых записей')}</p>
-          <p class="fm-tile__v">${recs.length}</p>
-        </div>
-      </div>
-      ${off ? `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Заряд и память — последние известные данные: пока устройство не на связи, они не обновляются.')}</p>` : ''}
-      ${!d.clockOk ? `<div class="fm-warn text-caption-2">${ic(I.clock, 'fm-i--s')}
-        <span>${t('Часы устройства разошлись с компьютером — время записей будет неверным.')}</span>
-        <button class="fm-btn fm-btn--sm ${off ? 'is-locked' : ''}" data-devclock="${d.id}" style="margin-left:auto">${t('Свериться')}</button></div>` : ''}
-      ${off ? `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Устройство не отвечает. Включите его и держите рядом — записи заберём, как только оно ответит.')}</p>` : ''}
+      ${off ? `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Устройство не отвечает.')}</p>` : ''}
       ${recs.length
           ? `<div>
               ${recs.map(r => `<div class="fm-qrow">
@@ -2430,29 +2417,20 @@ function devCard(d) {
                     <p class="fm-qrow__t text-body-2">${esc(r.title)}</p>
                     <p class="fm-qrow__m text-caption-2">${esc(fmtShort(r.ts))} · ${esc(fmtDur(r.sec))}</p>
                   </div>
-                  <button class="fm-btn fm-btn--sm ${off ? 'is-locked' : ''}" data-devget="${r.id}">${ic(I.download, 'fm-i--s')} ${t('Забрать')}</button>
-                  <button class="fm-btn fm-btn--sm fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Удалить с устройства" data-devdel="${r.id}">${ic(I.trash, 'fm-i--s')}</button>
                 </div>`).join('')}
+              <p class="fm-hint__n text-caption-2" style="margin:var(--space-m) 0 0">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
             </div>`
-          : `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Новых записей нет — всё забрано.')}</p>`}
-      <div class="fm-dev__acts">
-        <button class="fm-btn fm-btn--primary ${off ? 'is-locked' : ''}" data-devall="${d.id}">
-          ${ic(I.download, 'fm-i--s')} ${t('Забрать все записи')}</button>
-        <button class="fm-btn ${off ? 'is-locked' : ''}" data-devlisten="${d.id}">
-          ${ic(I.wave, 'fm-i--s')} ${S.listen === d.id ? t('Остановить прослушивание') : t('Слушать живой звук')}</button>
-        <button class="fm-btn ${off ? 'is-locked' : ''}" data-devrec="${d.id}">${ic(I.mic, 'fm-i--s')} ${t('Начать запись на устройстве')}</button>
-      </div>
+          : `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Новых записей нет.')}</p>`}
     </div>`;
 }
 function screenDevices() {
   return `
     <div class="fm-page">
       <div class="fm-page__head">
-        <h1 class="text-header-1">Диктофоны</h1>
-        <span class="fm-page__spacer"></span>
-        <button class="fm-btn" data-devscan="1">${ic(I.link, 'fm-i--s')} Искать устройства</button>
+        <h1 class="text-header-1">${t('Очередь загрузки')}</h1>
       </div>
-      <p class="fm-pane__lead text-body-2">Диктофоны подключаются по Bluetooth. Записи с устройства попадают в общий список — источником у них стоит диктофон.</p>
+      <p class="fm-pane__lead text-body-2">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
+      ${lostDeviceHtml('fm')}
       <div style="display:flex;flex-direction:column;gap:var(--size-4x)">
         ${DEVICES.map(devCard).join('')}
       </div>
@@ -2496,6 +2474,7 @@ function screenOutbox() {
           <button class="fm-btn fm-btn--sm" data-qone="${q.id}">Отправить</button>
         </div>`).join('')}</div>`
         : `<div class="fm-well text-body-2" style="min-height:120px">${t('Очередь пуста — все записи приняты сервером.')}</div>`}
+      ${crmBannerHtml(FILES.find(x => recListKind(x) === 'queued') || FILES[0], 'fm')}
       <p class="fm-hint__n text-caption-2">${t('Всего в очереди')}: ${QUEUE.length} ${plZap(QUEUE.length)} · ${num(mb, 1)} ${t('МБ')}.
         ${t('Очередь ничего не удаляет: пока сервер не подтвердил приём, запись остаётся здесь. Недописанный файл встаёт в очередь целиком, хвост дошлём отдельно.')}</p>
       <div class="fm-sect"><h2 class="text-header-2">Место</h2></div>
@@ -2514,18 +2493,17 @@ function screenOutbox() {
 
 /* ============================== РОУТЕР ==================================== */
 function render() {
+  if (S.screen === 'home' || S.screen === 'ask' || S.screen === 'templates' || S.screen === 'membership' || S.screen === 'outbox') {
+    S.screen = 'files';
+  }
   const specOn = S.view === 'spec';
   $('#winApp').classList.toggle('is-hidden', S.view !== 'app');
   $('#winPrefs').classList.toggle('is-hidden', S.view !== 'prefs');
   $('#winTray').style.display = S.view === 'tray' ? 'flex' : 'none';
   $('#winBrief').classList.toggle('is-hidden', !specOn);
-  document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('is-on', b.dataset.view === S.view));
+  const stampView = S.view === 'prefs' ? 'app' : S.view;
+  document.querySelectorAll('#viewSwitch button').forEach(b => b.classList.toggle('is-on', b.dataset.view === stampView));
   document.querySelectorAll('#osSwitch button').forEach(b => b.classList.toggle('is-on', b.dataset.setos === OS));
-  const map = $('#featureMap');
-  if (map) {
-    map.style.display = specOn ? 'none' : '';
-    if (!specOn) map.innerHTML = featureMapHtml();
-  }
   const bar = $('#macbar');
   if (bar) bar.style.display = specOn ? 'none' : '';
   renderMacbar();                    /* меню зависят от того, что открыто, — рисуются каждый раз */
@@ -2611,7 +2589,7 @@ const MACMENU = {
     + mmi('Скрыть FlowMeet', '⌘H', 'data-win="min"')
     + mmi('Завершить FlowMeet', '⌘Q', 'data-win="close"'),
   file: () => mmi('Загрузить файл…', '⌘O', 'data-upload="1"')
-    + mmi('Забрать с диктофона', '', 'data-fromdevice="1"') + SEP
+    + mmi(t('Очередь загрузки'), '', 'data-fromdevice="1"') + SEP
     /* HIG ждёт в «Файле» группу «Open Recent». Подменю прототип не рисует,
        поэтому три последние записи стоят плоской группой — они настоящие. */
     + `<p class="fm-menu__label text-subheader-2">${t('Открыть недавнюю запись')}</p>`
@@ -2620,21 +2598,16 @@ const MACMENU = {
     + mmi('Новая папка', '⇧⌘N', 'data-newfolder="1"') + SEP
     + (S.screen === 'note' && file()
         ? mmi('Выгрузить расшифровку', '', 'data-export="transcript"')
-          + mmi('Выгрузить конспект', '', 'data-export="summary"')
-        : mmiOff('Выгрузить расшифровку') + mmiOff('Выгрузить конспект')) + SEP
+        : mmiOff('Выгрузить расшифровку')) + SEP
     + mmi('Закрыть окно', '⌘W', 'data-win="close"'),
   edit: () => (S.screen === 'note' && file()
       ? mmi('Переименовать запись', '', 'data-rename="cur"')
-        + mmi('Поделиться записью…', '', 'data-share="1"')
         + mmi('В корзину', '⌘⌫', 'data-todelete="cur"')
-      : mmiOff('Переименовать запись') + mmiOff('Поделиться записью…') + mmiOff('В корзину', '⌘⌫')) + SEP
-    + mmi('Найти в записях', '⌘F', 'data-scope="search" data-value=""')
-    + mmi('Свой словарь…', '', 'data-open="scrimSettings" data-setpane="vocab"'),
+      : mmiOff('Переименовать запись') + mmiOff('В корзину', '⌘⌫')) + SEP,
   view: () => (S.screen === 'note'
       ? mmi(S.listOff ? 'Показать список записей' : 'Скрыть список записей', '⌥⌘S', 'data-listtoggle="1"')
         + mmi('Расшифровка', '⌘1', 'data-gotab="transcript"')
-        + mmi('Конспект', '⌘2', 'data-gotab="summary"')
-      : mmiOff('Скрыть список записей', '⌥⌘S') + mmiOff('Расшифровка', '⌘1') + mmiOff('Конспект', '⌘2')) + SEP
+      : mmiOff('Скрыть список записей', '⌥⌘S') + mmiOff('Расшифровка', '⌘1')) + SEP
     + mmi('Светлое или тёмное оформление', '', 'data-themetoggle="1"')
     + mmi('Во весь экран', '⌃⌘F', 'data-win="max"'),
   /* Отмена записи — единственное необратимое действие, поэтому она есть и в
@@ -2644,8 +2617,7 @@ const MACMENU = {
         + mmi('Остановить', '', 'data-recstop="1"')
         + mmi('Отменить запись…', '', 'data-reccancel="1"')
       : mmi('Начать запись', '⇧⌘R', 'data-recnow="1"') + mmiOff('Остановить') + mmiOff('Отменить запись…')) + SEP
-    + mmi('Диктофоны…', '', 'data-go="devices"')
-    + mmi('Очередь отправки…', '', 'data-go="outbox"') + SEP
+    + mmi('Диктофоны…', '', 'data-go="devices"') + SEP
     + mmi('Настройки записи…', '', 'data-view="prefs" data-prefs="recording"')
     + mmi('Режим организации…', '', 'data-view="prefs" data-prefs="org"')
     + mmi('Горячие клавиши…', '', 'data-view="prefs" data-prefs="keys"'),
@@ -2654,9 +2626,7 @@ const MACMENU = {
     + mmi('Приложение FlowMeet', '', 'data-view="app"')
     + mmi('Параметры', '', 'data-view="prefs"')
     + mmi('Виджет FlowMeet', '', 'data-view="tray"'),
-  help: () => mmi('Справка FlowMeet', '', 'data-open="scrimSettings" data-setpane="help"')
-    + mmi('Написать в поддержку', '', 'data-open="scrimSettings" data-setpane="support"')
-    + mmi('Отзыв о программе', '', 'data-open="scrimSettings" data-setpane="feedback"'),
+  help: () => mmi('О программе', '', 'data-view="prefs" data-prefs="about"'),
 };
 const DOCK_MENU = () => (S.rec.on
     ? mmi(S.rec.paused ? 'Продолжить' : 'Пауза', '', 'data-recpause="1"')
@@ -2715,12 +2685,11 @@ document.addEventListener('mouseover', e => {
 
 /* ============================== ОКНО «ПАРАМЕТРЫ» ========================== */
 const PREFS_NAV = [
-  ['general', 'Общие', I.gear], ['recording', 'Запись', I.mic],
-  /* Режим записи, профиль подсказок и приватные звонки задаёт организация —
-     это отдельная поверхность, а не настройка пользователя: он её видит, но
-     почти ничего в ней не решает. */
-  ['org', 'Организация', I.team], ['keys', 'Горячие клавиши', I.keys],
-  ['notify', 'Уведомления', I.bell], ['cloud', 'Сервер организации', I.cloud], ['about', 'О программе', I.info]
+  ['account', 'Аккаунт', I.user],
+  ['recording', 'Запись', I.mic],
+  ['org', 'Организация', I.team],
+  ['notify', 'Уведомления', I.bell],
+  ['about', 'О программе', I.info]
 ];
 const opt = (t, s, right) => `<div class="fm-opt"><div><span class="fm-opt__t text-body-2">${t}</span>
   ${s ? `<p class="fm-opt__s text-caption-2">${s}</p>` : ''}</div><div class="fm-opt__right">${right}</div></div>`;
@@ -2741,11 +2710,7 @@ const PREFS = {
     ${opt('Запускать при входе в систему', '', tgl(true))}
     ${opt(OS === 'mac' ? 'Показывать значок в строке меню' : 'Показывать значок в области уведомлений',
       'Состояние записи и быстрые действия под рукой', tgl(true))}
-    ${opt('Язык интерфейса', 'Язык меню и подписей в приложении', langSel())}
-    <div class="fm-sect"><h2 class="text-header-2">Помощь и обратная связь</h2></div>
-    ${opt('Поддержка', 'Ответим в рабочие часы', '<button class="fm-btn fm-btn--sm" data-goset="support">Написать</button>')}
-    ${opt('Отзыв о программе', 'Что мешает в работе, чего не хватает', '<button class="fm-btn fm-btn--sm" data-goset="feedback">Отправить</button>')}
-    ${opt('Диагностика', 'Журналы приложения без содержимого записей', '<button class="fm-btn fm-btn--sm" data-diag="1">Передать нам</button>')}`,
+    ${opt('Язык интерфейса', 'Язык меню и подписей в приложении', langSel())}` /* язык ещё в аккаунте — general уйдёт из меню */ ,
 
   recording: () => `
     <div class="fm-sect" style="margin-top:0"><h2 class="text-header-2">Виджет на экране</h2></div>
@@ -2788,6 +2753,7 @@ const PREFS = {
     ${opt('Записывать автоматически', 'Начинать и останавливать вместе со встречей', tgl(true))}
     ${opt('Ложная тревога', 'Микрофон занял не разговор — запись удаляется и на сервер не уходит', tgl(true))}
     ${opt('Две дорожки в одном файле', 'Ваш голос и голос собеседника пишутся отдельно. В переговорной, где микрофон один, дорожка тоже одна', tgl(true))}
+    ${opt('Сочетания клавиш', OS === 'mac' ? '⇧⌘R начинает запись, даже если окно свёрнуто' : 'Ctrl+Shift+R начинает запись, даже если окно свёрнуто', tgl(true))}
     <div class="fm-sect"><h2 class="text-header-2">Согласие на запись</h2></div>
     <p class="fm-legal text-caption-2">Перед записью убедитесь, что участники предупреждены о записи и расшифровке
       и что получено согласие, если оно требуется по закону в вашей стране и в странах участников.
@@ -2817,51 +2783,33 @@ const PREFS = {
         + ' · ' + t((HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0]).what),
       `<span class="fm-tag">${t(hintProfileName(ORG.hintProfile))}</span>`)}
     <div class="fm-note text-body-3" style="margin:var(--size-3x) 0">${ic(I.ai, 'fm-i--s')}
-      <span>Подсказки считает сервер организации по звуку разговора. Время каждой подсказки пишется в журнал — по нему видно, успевает ли она к разговору.</span></div>
+      <span>Подсказка приходит событием на том же канале, что звук. Какой текст брать из карточки сделки — в этом API нет.</span></div>
     <div class="fm-sect"><h2 class="text-header-2">Что можно не записывать</h2></div>
-    ${opt('Приватный звонок', 'Разрешение выдаёт сервер организации отдельно от режима записи',
+    ${opt('Приватный звонок', 'В API приёма звука этого поля нет. Здесь только показ политики организации — не переключатель.',
       `<span class="fm-tag">${t(ORG.privateCalls ? 'Разрешён' : 'Запрещён')}</span>`)}
     <p class="fm-legal text-caption-2">${ORG.privateCalls
       ? 'Разговор, помеченный приватным, не записывается и на сервер не уходит.'
       : 'Приватные звонки запрещены сервером: записывается любой разговор, включая личный.'}</p>
-    <div class="fm-sect"><h2 class="text-header-2">Разбор записи</h2></div>
-    ${opt('Разделение голосов', 'Подключаемая служба сервера: без неё в расшифровке один говорящий',
-      `<span class="fm-tag">${t(ORG.diarization ? 'Включено' : 'Выключено')}</span>`)}`,
-
-  keys: () => `
-    <div class="fm-sect" style="margin-top:0"><h2 class="text-header-2">Горячие клавиши</h2></div>
-    ${opt('Глобальные сочетания', 'Работают, когда приложение свёрнуто', tgl(true))}
-    ${opt('Снимок экрана в заметку', 'Сохранить то, что показывают на встрече',
-      S.keys.shot ? `<span class="fm-kbd">${S.keys.shot} <button data-keyclear="shot" title="Убрать сочетание">${ic(I.close, 'fm-i--s')}</button></span>`
-      : S.keysAsk === 'shot' ? `<span class="fm-kbd">Нажмите сочетание…</span>`
-      : `<button class="fm-btn fm-btn--sm" data-keyset="shot">Задать</button>`)}
-    ${opt('Отметить важное', 'Пометить момент, чтобы вернуться к нему позже',
-      S.keys.mark ? `<span class="fm-kbd">${S.keys.mark} <button data-keyclear="mark" title="Убрать сочетание">${ic(I.close, 'fm-i--s')}</button></span>`
-      : S.keysAsk === 'mark' ? `<span class="fm-kbd">Нажмите сочетание…</span>`
-      : `<button class="fm-btn fm-btn--sm" data-keyset="mark">Задать</button>`)}
-    <div style="display:flex;justify-content:flex-end;margin-top:var(--size-5x)">
-      <button class="fm-btn fm-btn--sm" data-keysreset="1">Вернуть по умолчанию</button></div>`,
+    <div class="fm-sect"><h2 class="text-header-2">Сервер организации</h2></div>
+    <p class="fm-pane__lead text-body-2">${t('Куда уходит звук, задаёт администратор. В приложении адрес только показан.')}</p>
+    ${opt('Сервер', '', (ORG.server
+      ? `<span class="fm-tag fm-tag--green">${t('Задан')}</span>`
+      : `<span class="fm-tag fm-tag--red">${t('Не задан')}</span>`))}
+    ${opt('Адрес', '', `<span class="text-code-1">${esc(orgServerView().addr)}</span>`)}
+    ${opt('Связь сейчас', '', (orgServerView().live
+      ? `<span class="fm-tag fm-tag--green">${t('Есть')}</span>`
+      : `<span class="fm-tag fm-tag--red">${t('Нет')}</span>`))}`,
 
   notify: () => `
     <div class="fm-sect" style="margin-top:0"><h2 class="text-header-2">Уведомления</h2></div>
     ${opt('Начало встречи', 'Спрашивать, начинать ли запись', tgl(true))}
-    ${opt('Запись загружена', 'Сообщить, когда запись готова к разбору', tgl(true))}
-    ${opt('Заметка готова', 'Сообщить, когда расшифровка и конспект собраны', tgl(true))}`,
+    ${opt('Запись ушла на сервер', 'Сообщить, когда файл принят', tgl(true))}`,
 
-  cloud: () => `
-    <div style="width:var(--size-12x);height:var(--size-12x);border-radius:var(--radius-l);border:1px solid var(--line-border);display:grid;place-items:center;margin-bottom:var(--size-4x)">
-      ${ic(I.cloud, 'fm-i--l')}</div>
-    <h1 class="text-header-1">Сервер организации</h1>
-    <p class="fm-pane__lead text-body-2">Записи хранятся на сервере вашей организации, а не в чужом облаке.</p>
-    <ol class="fm-pane__list text-body-2">
-      <li>Записи копируются на сервер организации, чтобы не потерялись при поломке ноутбука.</li>
-      <li>Одна и та же запись открывается на рабочем столе, в браузере и на телефоне.</li>
-    </ol>
-    ${opt('Выгружать записи на сервер', 'Записи копируются на сервер организации автоматически', tgl(true))}`,
+  cloud: () => orgServerPane('fm'),
 
   about: () => `
     <h1 class="text-header-1">О программе</h1>
-    <p class="fm-pane__lead text-body-2">FlowMeet для рабочего стола — запись встреч, расшифровка и разбор по шаблонам внутри контура организации.</p>
+    <p class="fm-pane__lead text-body-2">FlowMeet для рабочего стола — запись встреч и расшифровка на сервере организации.</p>
     <!-- ФАКТ, а не рамка: установщик есть только у Windows; сборка macOS
          раздаётся без установщика и без подписи (передача Пименова 26.08.2026). -->
     ${opt('Версия приложения', OS === 'mac' ? 'Сборка для macOS · без установщика и подписи' : 'Установщик Windows',
@@ -2878,14 +2826,24 @@ const PREFS = {
     ${opt('Удаление программы', 'Записи остаются на сервере организации: удаление приложения их не трогает', '<span class="fm-tag">Записи остаются</span>')}`
 };
 function renderPrefs() {
-  /* Текст ставится напрямую, минуя разметку, поэтому переводится руками. */
-  const pane = (PREFS_NAV.find(p => p[0] === S.prefsPane) || [, 'Параметры'])[1];
-  $('#winPrefs .fm-chrome__name').textContent = OS === 'mac' ? t(pane) : 'Параметры';
-  $('#prefsNav').innerHTML = PREFS_NAV.map(([k, t, i]) => `
-    <button class="fm-navitem ${S.prefsPane === k ? 'is-active' : ''}" data-prefs="${k}">
-      ${ic(i)}<span>${t}</span>${k === 'keys' ? '<span class="fm-tag fm-tag--cyan" style="margin-left:auto">Новое</span>' : ''}
-    </button>`).join('');
-  $('#prefsPane').innerHTML = PREFS[S.prefsPane]();
+  if (S.prefsPane === 'keys' || S.prefsPane === 'general') S.prefsPane = 'recording';
+  if (S.prefsPane === 'cloud') S.prefsPane = 'org';
+  $('#winPrefs .fm-chrome__name').textContent = 'Параметры';
+  $('#prefsPane').innerHTML = `
+    <div class="fm-prefs__who">
+      <span class="fm-avatar fm-avatar--round">АР</span>
+      <div>
+        <div class="text-body-2">a.ralovets</div>
+        <div class="text-caption-2" style="color:var(--text-secondary)">${t('Личное пространство')}</div>
+      </div>
+    </div>
+    <div id="prefs-account">${SET.account()}</div>
+    <div id="prefs-recording">${PREFS.recording()}</div>
+    <div id="prefs-org">${PREFS.org()}</div>
+    <div id="prefs-notify">${PREFS.notify()}</div>
+    <div id="prefs-about">${PREFS.about()}</div>`;
+  const el = document.getElementById('prefs-' + S.prefsPane);
+  if (el) el.scrollIntoView({ block: 'start' });
 }
 /* ─────────────────────────────── ВИДЖЕТ ───────────────────────────────────
    Третье окно продукта — виджет на рабочем столе (прежде назывался «значок у
@@ -2902,7 +2860,7 @@ function recTick(on) {
          таймеру: правило одно на два прототипа и живёт в общей части
          (`recLinesAt` + `hintsAfter`). Пока связи с сервером нет, подсказок не
          будет: считает их сервер, и врать про это нельзя. */
-      const want = LINK.live ? hintsAfter(ORG.hintProfile, recLinesAt(S.rec.sec)) : [];
+      const want = (LINK.live && SESSION.hintsOn) ? hintsAfter(ORG.hintProfile, recLinesAt(S.rec.sec)) : [];
       if (want.length > S.rec.hints.length) {
         S.rec.hints = want;
         renderTrayAct(); return;                       /* пришла подсказка — перерисовали ленту */
@@ -2917,7 +2875,12 @@ function recTick(on) {
    называет причину: это состояние пользователь встретит, и он должен его
    понять, а не гадать, почему кнопка не сработала. */
 function recStart(auto) {
+  if (!ORG.server) { toast(t('Сервер организации не задан. Запись не начинается.')); return; }
   if (diskBlocked()) { toast(diskWhy()); return; }
+  if (auto) {
+    SESSION.recCard = CARDS[0];
+    SESSION.recBind = 'calendar';
+  }
   S.rec = { on: true, paused: false, sec: 0, saved: null, auto: auto || null, hints: [] };
   S.view = 'tray'; recTick(true); render();
 }
@@ -2934,12 +2897,14 @@ function recCancel(falseAlarm) {
 }
 function recStop() {
   const sec = Math.max(1, S.rec.sec), d = new Date();
-  const n = {
+    const n = recNewFile({
     id: 'r' + d.getTime().toString(36),
     title: t('Запись от') + ' ' + fmtDate(d.getTime()), ts: d.getTime(), sec, at: 0,
     folder: null, src: 'Рабочий стол', custom: [],
-    transcript: [], transcriptEmpty: true, summaryEmpty: true
-  };
+    transcript: [], transcriptEmpty: true, summaryEmpty: true,
+    card: SESSION.recCard ? { id: SESSION.recCard.id, name: SESSION.recCard.name } : null,
+    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null
+  });
   FILES.unshift(n);
   applyLang();                                   // выводимые строки записи собираются из ts и sec
   /* Связи нет — запись не теряется, а встаёт в очередь отправки: очередь
@@ -2992,6 +2957,8 @@ function renderTrayAct() {
         <div class="fm-rec__time">${f ? f.total : '—'}</div>
         <p class="fm-rec__where text-caption-2" style="margin:0">Расшифровка соберётся после обработки.
           ${LINK.live ? t('Запись уходит на сервер.') : t('Связи нет — запись встала в очередь отправки и уйдёт сама.')}</p>
+        ${crmBannerHtml(f, 'fm')}
+        ${f ? recCardActionsHtml(f.id, 'fm') : ''}
         <div class="fm-rec__acts">
           <button class="fm-btn" data-recnew="1">Записать ещё</button>
           <button class="fm-btn fm-btn--primary" data-file="${S.rec.saved}" data-view="app">Открыть запись</button>
@@ -3014,10 +2981,13 @@ function renderTrayAct() {
       </div>` : ''}
     ${diskBlocked() ? `<div class="fm-warn fm-warn--danger text-caption-2" style="margin-bottom:var(--size-3x)">
         ${ic(I.alert, 'fm-i--s')}<span>${t(diskWhy())}</span></div>` : ''}
+    ${!ORG.server ? `<div class="fm-warn fm-warn--danger text-caption-2" style="margin-bottom:var(--size-3x)">
+        ${ic(I.alert, 'fm-i--s')}<span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>` : ''}
     <button class="fm-btn fm-btn--primary fm-btn--block fm-btn--lg" data-recnow="1">
       <svg class="fm-i" viewBox="0 0 16 16"><path d="M8 10.5a2.5 2.5 0 0 0 2.5-2.5V4a2.5 2.5 0 0 0-5 0v4A2.5 2.5 0 0 0 8 10.5zM4 8a4 4 0 0 0 8 0M8 12.5V14"/></svg>
       Начать запись
     </button>
+    ${recSessionCardHtml('fm')}
     <p class="fm-rec__where text-caption-2" style="margin:var(--space-m) 0 0;text-align:center">${
       OS === 'mac' ? 'Или сочетание клавиш: ⇧⌘R' : 'Или горячие клавиши: Ctrl + Shift + R'}</p>
     <p class="fm-rec__where text-caption-2" style="margin:var(--space-m) 0 0;text-align:center">${
@@ -3047,11 +3017,12 @@ function renderTray() {
 /* ======================= МОДАЛКА НАСТРОЕК (веб) =========================== */
 const SET_NAV = [
   ['Аккаунт', [['account', 'Аккаунт и безопасность', I.user]]],
-  ['Рабочее пространство', [['person', 'Персонализация', I.person], ['prefs', 'Параметры', I.gear],
-    ['vocab', 'Свой словарь', I.book], ['cloud', 'Сервер организации', I.cloud]]],
-  ['Помощь и поддержка', [['support', 'Написать в поддержку', I.chat], ['feedback', 'Отзыв о программе', I.mail],
-    ['help', 'Справочный центр', I.help], ['about', 'О программе', I.info]]]
+  ['Рабочее пространство', [['cloud', 'Сервер организации', I.cloud]]],
+  ['О программе', [['about', 'О программе', I.info]]]
 ];
+/* Персонализация, «как разбирать», память, язык распознавания, автоподпись
+   и словарь — не call-recorder и не контур. Экраны в SET живы для ссылок,
+   в меню их нет. */
 const SET = {
   account: () => `
     <h1 class="text-header-1">Аккаунт и безопасность</h1>
@@ -3150,30 +3121,7 @@ const SET = {
       : `<div class="fm-well text-body-2">${ic(I.book, 'fm-i--xl')}
         Добавьте фамилии, названия и сокращения — распознавание станет точнее</div>`}`,
 
-  cloud: () => `
-    <h1 class="text-header-1">Сервер организации</h1>
-    <p class="fm-pane__lead text-body-2">Записи, расшифровки и конспекты лежат на сервере вашей организации и наружу не уходят. Отсюда видно, связаны ли с ним ваши устройства и когда была последняя связь.</p>
-    <ol class="fm-pane__list text-body-2">
-      <li>Записи копируются на сервер организации, чтобы не потерялись при поломке ноутбука.</li>
-      <li>Одна и та же запись открывается на рабочем столе, в браузере и на телефоне.</li>
-    </ol>
-    <p class="fm-pane__note text-caption-2">${ic(I.info, 'fm-i--s')} Адрес сервера задаёт администратор — в приложении он только показан.</p>
-    <div class="fm-sect"><h3 class="text-header-2">Подключённые устройства</h3><span class="fm-sect__spacer"></span>
-      <span class="fm-tag fm-tag--green"><span class="fm-dot"></span>Связь есть</span></div>
-    <div class="fm-tblwrap"><table class="fm-tbl2 text-body-2">
-      <thead><tr><th>Устройство</th><th>Вход выполнен</th><th>Последняя связь</th><th>Состояние</th></tr></thead>
-      <tbody>
-        <tr><td class="fm-strong">FlowMeet · рабочий стол</td><td>Windows</td><td>только что</td><td><span class="fm-tag fm-tag--green">Включено</span></td></tr>
-        <tr><td class="fm-strong">FlowMeet · телефон</td><td>Android</td><td>26.08, 18:40</td><td><span class="fm-tag fm-tag--green">Включено</span></td></tr>
-        <!-- Диктофоны берутся из общей части: второго места, где написано, какие
-             устройства подключены и на связи ли они, нет. Раньше строка стояла
-             разметкой и жила своей жизнью — с именем нашего изделия, которого
-             не существует, и со состоянием, не совпадавшим с экраном диктофонов. -->
-        ${DEVICES.map(d => `<tr><td class="fm-strong">${esc(d.name)}</td><td>${
-          t('по Bluetooth')}</td><td>${d.link === 'off' ? t('нет связи') : t('только что')}</td><td>${
-          d.link === 'off' ? `<span class="fm-tag">${t('Отключён')}</span>`
-                           : `<span class="fm-tag fm-tag--green">${t('Включено')}</span>`}</td></tr>`).join('')}
-      </tbody></table></div>`,
+  cloud: () => orgServerPane('fm'),
 
   support: () => `
     <h1 class="text-header-1">Написать в поддержку</h1>
@@ -3219,7 +3167,35 @@ const SET = {
 
   about: () => PREFS.about()
 };
+function orgServerPane(kind) {
+  const v = orgServerView();
+  const tag = (on, yes, no) => on
+    ? `<span class="fm-tag fm-tag--green">${t(yes)}</span>`
+    : `<span class="fm-tag fm-tag--red">${t(no)}</span>`;
+  const warn = !v.set
+    ? (kind === 'm'
+      ? `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}<span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>`
+      : `<div class="fm-warn fm-warn--danger text-body-3">${ic(I.alert, 'fm-i--s')}<span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>`)
+    : '';
+  if (kind === 'm') {
+    return `<p class="m-pad m-body" style="margin:0 0 var(--size-5x)">${t('Куда уходит звук, задаёт администратор. В приложении адрес только показан. Продавец его не выбирает и не выключает.')}</p>
+      <div class="m-group">
+        ${optRow('Сервер', '', tag(v.set, 'Задан', 'Не задан'))}
+        ${optRow('Адрес', '', `<span class="m-cap m-num">${esc(v.addr)}</span>`)}
+        ${optRow('Связь сейчас', 'Если связи нет, запись остаётся на устройстве и уйдёт на этот же адрес, когда связь появится.', tag(v.live, 'Есть', 'Нет'))}
+      </div>${warn}`;
+  }
+  return `
+    <h1 class="text-header-1">Сервер организации</h1>
+    <p class="fm-pane__lead text-body-2">${t('Куда уходит звук, задаёт администратор. В приложении адрес только показан. Продавец его не выбирает и не выключает.')}</p>
+    ${opt('Сервер', '', tag(v.set, 'Задан', 'Не задан'))}
+    ${opt('Адрес', '', `<span class="text-code-1">${esc(v.addr)}</span>`)}
+    ${opt('Связь сейчас', 'Если связи нет, запись остаётся на устройстве и уйдёт на этот же адрес, когда связь появится.', tag(v.live, 'Есть', 'Нет'))}
+    ${warn}`;
+}
 function renderSet() {
+  if (S.setPane === 'person' || S.setPane === 'prefs' || S.setPane === 'vocab') S.setPane = 'account';
+  if (S.setPane === 'support' || S.setPane === 'feedback' || S.setPane === 'help') S.setPane = 'about';
   $('#setNav').innerHTML = SET_NAV.map(([g, items]) => `
     <div class="fm-navgroup"><p class="fm-navgroup__label text-subheader-2">${g}</p>
       ${items.map(([k, t, i]) => `<button class="fm-navitem ${S.setPane === k ? 'is-active' : ''}" data-set="${k}">${ic(i)}<span>${t}</span></button>`).join('')}
@@ -3451,10 +3427,7 @@ const MENU_TRASH = id => mi(I.folder, 'Восстановить', `data-restore=
 /* «Удалить заметку» относится только к своему разбору: конспект — часть
    записи, удалять его нечем, и пункт молча ничего не делал. Теперь его там
    просто нет, как и в мобильном прототипе. */
-const MENU_TAB = () => mi(I.tpl, 'Сменить шаблон', 'data-act="retpl"')
-  + mi(I.ai, 'Сформировать заново', 'data-act="regen"')
-  + (S.tab === 'summary' ? ''
-     : '<hr class="fm-menu__sep">' + mi(I.trash, 'Удалить разбор', 'data-act="delnote"', true));
+const MENU_TAB = () => mi(I.ai, 'Сформировать заново', 'data-act="regen"');
 /* Каждый пункт несёт номер блока: без него меню не знает, над чем работает,
    и раньше просто ничего не делало. */
 const MENU_BLOCK = i => mi(I.file, 'Дублировать', `data-block="dup" data-bi="${i}"`)
@@ -3480,16 +3453,10 @@ const MENU_WS = `
   <div style="padding:var(--padding-l);display:flex;align-items:center;gap:var(--space-l)">
     <span class="fm-avatar">Л</span><span class="text-subheader-1">Личное пространство</span></div>
   <div style="padding:0 var(--padding-l) var(--padding-l)">
-    <button class="fm-btn fm-btn--sm" data-open="scrimSettings">${ic(I.gear, 'fm-i--s')} Настройки</button></div>
+    <button class="fm-btn fm-btn--sm" data-view="prefs" data-prefs="account">${ic(I.gear, 'fm-i--s')} Параметры</button></div>
   <hr class="fm-menu__sep">
   <p class="fm-menu__mail text-caption-2">a.ralovets@infomaximum.com</p>
   ${`<button class="fm-menu__item">${ic(I.user)}<span>Личное пространство</span>${ic(I.check, 'fm-i--s fm-check')}</button>`}
-  ${mi(I.team, 'Создать пространство команды', 'data-open="scrimTeam"')}
-  <hr class="fm-menu__sep">
-  ${mi(I.crown, 'Квота и лимиты', 'data-go="membership"')}
-  ${mi(I.chat, 'Написать в поддержку', 'data-open="scrimSettings" data-setpane="support"')}
-  ${mi(I.mail, 'Отзыв о программе', 'data-open="scrimSettings" data-setpane="feedback"')}
-  ${mi(I.download, 'Скачать приложение', 'data-open="scrimExplore" data-exppane="apps"')}
   <hr class="fm-menu__sep">
   ${mi(I.logout, 'Выйти', 'data-logout="1"')}`;
 /* «Добавить запись» открывала пустую запись без спроса. Способов добавить
@@ -3516,12 +3483,11 @@ const MENU_ENT = name => {
         : '<hr class="fm-menu__sep">' + `<p class="fm-menu__mail text-caption-2">${t('Других записей с ним нет')}</p>`);
 };
 
-const MENU_EXPORT = mi(I.file, 'Расшифровка (.txt)', 'data-export="transcript"')
-  + mi(I.book, 'Конспект (.txt)', 'data-export="summary"');
+const MENU_EXPORT = mi(I.file, 'Расшифровка (.txt)', 'data-export="transcript"');
 
 const MENU_ADD = mi(I.download, 'Загрузить файл…', 'data-upload="1"')
   + mi(I.mic, 'Записать сейчас', 'data-recnow="1"')
-  + mi(I.device, 'Забрать с диктофона', 'data-fromdevice="1"');
+  + mi(I.device, t('Очередь загрузки'), 'data-fromdevice="1"');
 const MENU_MOVE = id => `<p class="fm-menu__label text-subheader-2">Переместить в папку</p>`
   + FOLDERS.map(f => `<button class="fm-menu__item" data-moveto="${esc(f.name)}" data-mid="${id}">
       <span class="fm-navitem__dot" style="background:${f.color}"></span><span>${esc(f.name)}</span></button>`).join('')
@@ -3627,7 +3593,9 @@ const MENU_ORG = () => `<p class="fm-menu__label text-subheader-2">${t('Режи
   + `<button class="fm-menu__item" data-orgtoggle="privateCalls"><span>${t('Приватный звонок разрешён')}</span>${
       ORG.privateCalls ? ic(I.check, 'fm-i--s fm-check') : ''}</button>`
   + `<button class="fm-menu__item" data-orgtoggle="diarization"><span>${t('Разделение голосов включено')}</span>${
-      ORG.diarization ? ic(I.check, 'fm-i--s fm-check') : ''}</button>`;
+      ORG.diarization ? ic(I.check, 'fm-i--s fm-check') : ''}</button>`
+  + `<button class="fm-menu__item" data-orgtoggle="server"><span>${t('Сервер организации задан')}</span>${
+      ORG.server ? ic(I.check, 'fm-i--s fm-check') : ''}</button>`;
 function fmEvent(kind) {
   if (kind === 'auto') {
     if (S.rec.on) { toast('Запись уже идёт'); return; }
@@ -3667,7 +3635,12 @@ function fmEvent(kind) {
   }
 }
 
-function goScreen(name) { stopPlay(); S.screen = name; render(); }
+function goScreen(name) {
+  stopPlay();
+  if (name === 'home' || name === 'ask' || name === 'templates' || name === 'membership' || name === 'outbox') name = 'files';
+  S.screen = name;
+  render();
+}
 function openFile(id) {
   const f = FILES.find(x => x.id === id);
   if (!f) return;
@@ -3687,8 +3660,7 @@ function openFile(id) {
   const изПоиска = S.scope.kind === 'search' && String(S.scope.value || '').trim();
   S.find = изПоиска ? S.scope.value : '';
   S.fileId = id; S.screen = 'note';
-  S.tab = изПоиска ? 'transcript'
-    : (f.summaryEmpty && !isGen(id, 'summary')) ? 'transcript' : 'summary';
+  S.tab = 'transcript';
   render();
   /* И подводим к самому совпадению: в получасовой встрече оно может быть на
      двадцать второй минуте, и без этого человек листает расшифровку глазами —
@@ -3732,8 +3704,9 @@ document.addEventListener('click', e => {
   /* --- переключатель окон продукта и открытие приложения из значка --- */
   const v = hit('[data-view]');
   if (v) {
+    closeMenu();
     S.view = v.dataset.view;
-    const fid = v.dataset.file; if (fid) { S.fileId = fid; S.screen = 'note'; S.tab = 'summary'; }
+    const fid = v.dataset.file; if (fid) { S.fileId = fid; S.screen = 'note'; S.tab = 'transcript'; }
     if (v.dataset.prefs) S.prefsPane = v.dataset.prefs;      /* пункт меню ведёт в нужный раздел */
     render(); return;
   }
@@ -3745,7 +3718,9 @@ document.addEventListener('click', e => {
     if (op.dataset.exppane) S.expPane = op.dataset.exppane;
     closeMenu();
     $('#' + op.dataset.open).classList.add('is-open');
-    if (op.dataset.open === 'scrimSettings') renderSet();
+    if (op.dataset.open === 'scrimSettings') {
+      S.view = 'prefs'; S.prefsPane = 'account'; render(); return;
+    }
     if (op.dataset.open === 'scrimExplore') renderExp();
     return;
   }
@@ -3757,11 +3732,8 @@ document.addEventListener('click', e => {
   const sp = hit('[data-set]');  if (sp) { S.setPane = sp.dataset.set; renderSet(); return; }
   const ep = hit('[data-exp]');  if (ep) { S.expPane = ep.dataset.exp; renderExp(); return; }
   const pp = hit('[data-prefs]'); if (pp) { S.prefsPane = pp.dataset.prefs; renderPrefs(); return; }
-  /* Раздела аккаунта в окне «Параметры» нет — учётная запись живёт в настройках
-     приложения, поэтому строка ведёт именно туда. */
   if (hit('[data-acct]')) {
-    S.view = 'app'; S.setPane = 'account'; render(); renderSet();
-    $('#scrimSettings').classList.add('is-open'); return;
+    S.view = 'prefs'; S.prefsPane = 'account'; render(); return;
   }
 
   /* --- новая папка --- */
@@ -4060,11 +4032,11 @@ document.addEventListener('click', e => {
   const sg = hit('[data-suggest]');
   if (sg) { toast(t(sg.dataset.suggest) + ' ' + t('отправлено команде направления')); return; }
 
-  /* --- окно «Параметры»: помощь, диагностика, сочетания --- */
   const gs = hit('[data-goset]');
   if (gs) {
-    S.view = 'app'; S.setPane = gs.dataset.goset; render(); renderSet();
-    $('#scrimSettings').classList.add('is-open'); return;
+    S.view = 'prefs';
+    S.prefsPane = gs.dataset.goset === 'cloud' ? 'org' : (gs.dataset.goset || 'account');
+    render(); return;
   }
   if (hit('[data-diag]')) { toast('Журналы отправлены — содержимое записей в них не попадает'); return; }
   if (hit('#meetApps')) { showMenu($('#meetApps'), MENU_MEETAPPS(), { align: 'right' }); return; }
@@ -4200,6 +4172,29 @@ document.addEventListener('click', e => {
   }
   if (hit('[data-recstop]')) { recStop(); return; }
   if (hit('[data-recnew]')) { recStart(); return; }
+  if (hit('[data-hintstog]')) {
+    SESSION.hintsOn = !SESSION.hintsOn;
+    if (!SESSION.hintsOn) S.rec.hints = [];
+    renderTrayAct(); return;
+  }
+  const pc = hit('[data-pickcard]');
+  if (pc) {
+    $('#pickCardBody').innerHTML = recPickButtonsHtml(pc.dataset.pickcard);
+    $('#scrimPick').classList.add('is-open');
+    return;
+  }
+  const bc = hit('[data-bindcard]');
+  if (bc) {
+    recBindCard(bc.dataset.bindcard, bc.dataset.card);
+    $('#scrimPick').classList.remove('is-open');
+    render(); return;
+  }
+  if (hit('[data-clearsessioncard]')) {
+    recClearSessionCard();
+    render(); return;
+  }
+  const nc = hit('[data-notclient]');
+  if (nc) { recMarkNotClient(nc.dataset.notclient); render(); return; }
   /* Отмена — единственное необратимое действие, поэтому через подтверждение. */
   if (hit('[data-reccancel]')) {
     if (isMandatory()) { toast(MANDATORY_WHY); return; }
@@ -4226,36 +4221,6 @@ document.addEventListener('click', e => {
     const ids = devRecs(d.id).map(r => r.id);
     if (!ids.length) { toast('Новых записей на устройстве нет'); return; }
     devTake(ids); return;
-  }
-  const dd = hit('[data-devdel]');
-  if (dd) {
-    const i = DEV_RECS.findIndex(r => r.id === dd.dataset.devdel);
-    if (i > -1) DEV_RECS.splice(i, 1);
-    render(); toast('Запись удалена с устройства'); return;
-  }
-  const dc = hit('[data-devclock]');
-  if (dc) {
-    const d = devById(dc.dataset.devclock);
-    if (!d) return;
-    /* Часы сверяются по связи: у молчащего устройства сверять нечего, и об
-       этом надо сказать, а не делать вид, что сверили. */
-    if (d.link === 'off') { toast('Диктофон не на связи — часы сверим, как только он ответит'); return; }
-    d.clockOk = true; render(); toast('Часы устройства сверены с компьютером'); return;
-  }
-  const dl = hit('[data-devlisten]');
-  if (dl) {
-    const d = devById(dl.dataset.devlisten);
-    if (!d || d.link === 'off') { toast('Диктофон не на связи — живой звук недоступен'); return; }
-    S.listen = S.listen === d.id ? null : d.id;
-    render(); toast(S.listen ? t('Слушаем живой звук с') + ' ' + d.name : 'Прослушивание остановлено'); return;
-  }
-  const dr = hit('[data-devrec]');
-  if (dr) {
-    const d = devById(dr.dataset.devrec);
-    if (!d || d.link === 'off') { toast('Диктофон не на связи — командовать записью нечем'); return; }
-    DEV_RECS.push({ id: 'dv' + Date.now().toString(36), dev: d.id,
-      title: t('Запись с') + ' ' + d.name, sec: 60, ts: Date.now() });
-    render(); toast(t('Запись на устройстве начата — заберём её сюда, когда она закончится')); return;
   }
   if (hit('[data-devscan]')) { toast('Ищем диктофоны рядом: включите устройство и держите его в метре от компьютера'); return; }
 
@@ -4298,6 +4263,7 @@ document.addEventListener('click', e => {
     ORG[k] = !ORG[k]; closeMenu(); render();
     if (k === 'privateCalls') toast(ORG.privateCalls ? PRIVATE_WHY : 'Приватные звонки запрещены сервером: такой разговор тоже записывается');
     if (k === 'diarization') toast(ORG.diarization ? 'Разделение голосов включено администратором' : 'Разделение голосов выключено: в расшифровке будет один говорящий');
+    if (k === 'server') toast(ORG.server ? t('Сервер организации задан') : t('Сервер организации не задан. Запись не начинается.'));
     return;
   }
 
@@ -4483,7 +4449,12 @@ addEventListener('scroll', () => { if (performance.now() - menuAt > 250) closeMe
       'Запись будет удалена и на сервер не уйдёт. Восстановить её будет нечем — в отличие от остановки, которая запись сохраняет.',
       'Отменить запись', () => recCancel(false));
   }
-  if (q.get('settings')) { S.setPane = SET[q.get('settings')] ? q.get('settings') : 'account'; renderSet(); $('#scrimSettings').classList.add('is-open'); }
+  if (q.get('settings')) {
+    const p = q.get('settings');
+    S.view = 'prefs';
+    S.prefsPane = p === 'cloud' ? 'org' : (PREFS_NAV.some(x => x[0] === p) ? p : 'account');
+    render();
+  }
   if (q.get('explore')) { S.expPane = EXP[q.get('explore')] ? q.get('explore') : 'autoflow'; renderExp(); $('#scrimExplore').classList.add('is-open'); }
   if (q.get('folder') === 'new') { renderFolderModal(); $('#scrimFolder').classList.add('is-open'); }
   if (q.get('tplmodal')) openTpl(q.get('tplmodal'));
