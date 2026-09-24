@@ -2072,8 +2072,8 @@ dictAdd({
     'Recordings stay on the organisation server. To come back, sign in with your organisation account again.',
   'Вы вышли из пространства. Записи остались на сервере организации': 'You have signed out. The recordings stayed on the organisation server',
   /* события прототипа и сообщения */
-  'Событие снаружи': 'Outside event',
-  'Событие снаружи ▾': 'Outside event ▾',
+  'Имитировать событие': 'Simulate event',
+  'Имитировать событие ▾': 'Simulate event ▾',
   /* Что решила организация — переключатели плашки прототипа и состояние,
      которое приложение только показывает. */
   'Организация ▾': 'Organisation ▾',
