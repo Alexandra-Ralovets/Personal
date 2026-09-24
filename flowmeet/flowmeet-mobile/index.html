@@ -116,7 +116,7 @@ body {
 /* Плашка над телефоном — служебная, к продукту не относится. */
 .fm-plaque {
   display: flex; align-items: center; gap: var(--space-l); flex-wrap: wrap;
-  justify-content: center; margin-bottom: var(--size-5x); padding: 0 var(--padding-l);
+  justify-content: center; margin-bottom: var(--size-5x); padding: 0 var(--padding-l); max-width: 100%; box-sizing: border-box;
   color: var(--text-complimentary); font-size: 13px;
 }
 .fm-plaque__tag {
@@ -258,14 +258,15 @@ body {
 .fm-btn--danger { background: var(--danger-base); border-color: var(--danger-base); color: var(--text-contrast); }
 .fm-btn--danger:active { background: var(--danger-active); border-color: var(--danger-active); }
 .fm-btn--text { background: none; border-color: transparent; color: var(--primary-base); min-height: 44px; padding: 0 var(--space-m); }
-.fm-btn--icon { width: 44px; min-height: 44px; padding: 0; color: var(--primary-base);
+.fm-btn--icon { flex: 0 0 auto; width: 44px; min-height: 44px; padding: 0; color: var(--primary-base);
   background: none; border-color: transparent; }
 /* Порядок важен: у значка-кнопки заливка снята, поэтому основной цвет
    возвращаем явно — иначе «Спросить» выглядит как голая стрелка. */
 .fm-btn--icon.fm-btn--primary { background: var(--primary-base); border-color: var(--primary-base);
   color: var(--text-contrast); border-radius: var(--radius-l); }
 .fm-btn--block { width: 100%; }
-.fm-btn--sm { min-height: 36px; padding: 0 var(--padding-l); font-size: 15px; }
+/* Цель нажатия — не меньше 44 pt / 48 dp (HIG «Buttons», M3): 36 не проходило. */
+.fm-btn--sm { min-height: 44px; padding: 0 var(--padding-l); font-size: 15px; }
 .fm-btn[disabled] { opacity: .35; pointer-events: none; }
 
 .fm-input {
@@ -410,7 +411,7 @@ body {
 /* Закладка в проигрывателе: горит, когда звучащее место уже отмечено. */
 #btnMark.is-on { color: var(--tag-orange-text); }
 .m-speed.is-on { background: var(--primary-bg); color: var(--text-primary); font-weight: 600; }
-.m-speed { min-height: 36px; padding: 0 var(--padding-m); flex: 0 0 auto;
+.m-speed { min-width: 44px; min-height: 44px; padding: 0 var(--padding-m); flex: 0 0 auto;
   border-radius: var(--radius-m); border: none; background: var(--bg-container-secondary);
   font-family: inherit; font-size: 15px; font-variant-numeric: tabular-nums;
   color: var(--text-primary); cursor: pointer; }
@@ -441,7 +442,7 @@ body {
 .m-segs { display: flex; gap: var(--space-m); overflow-x: auto; -webkit-overflow-scrolling: touch;
   padding: var(--space-m) var(--size-8x) calc(var(--space-m) + 24px) var(--size-5x);
   margin-bottom: -24px; }
-.m-seg-btn { flex: 0 0 auto; min-height: 36px; padding: 0 var(--padding-l); border-radius: var(--radius-l);
+.m-seg-btn { flex: 0 0 auto; min-height: 44px; padding: 0 var(--padding-l); border-radius: var(--radius-l);
   border: none; background: none;
   font-family: inherit; font-size: 15px; color: var(--text-complimentary); cursor: pointer; }
 /* Выбранную вкладку показывает заливка, а не цвет подписи: бирюзовая подпись на
@@ -465,8 +466,11 @@ body {
    заливка и полоса слева. */
 .m-seg-row.is-now .m-who--mine { color: var(--text-primary); }
 .m-seg-row__head { display: flex; align-items: baseline; gap: var(--space-m); margin-bottom: 4px; }
-.m-who { color: var(--text-primary); border: none; background: none; padding: 0;
+.m-who { position: relative; color: var(--text-primary); border: none; background: none; padding: 0;
   font-family: inherit; font-size: inherit; font-weight: inherit; cursor: pointer; }
+/* Имя нажимается, но строка реплики плотная: зона нажатия расширена невидимо
+   до 44 pt, вёрстка не меняется. */
+.m-who::after { content: ''; position: absolute; inset: -11px -4px; }
 .m-who--mine { color: var(--primary-active); }
 /* Время реплики — вторичная подпись, но подпись: у --text-hint на белом
    замерено 1,84:1, это нечитаемо. */
@@ -579,6 +583,9 @@ body {
 [data-os="android"] .m-row__act,
 [data-os="android"] .m-seek { width: 48px; min-height: 48px; height: 48px; }
 [data-os="android"] .m-nav { min-height: 48px; }
+[data-os="android"] .fm-btn--sm, [data-os="android"] .fm-btn--text, [data-os="android"] .m-speed, [data-os="android"] .m-seg-btn, [data-os="android"] .m-rec__x { min-height: 48px; }
+[data-os="android"] .m-speed { min-width: 48px; }
+[data-os="android"] .m-rec__x { width: 48px; height: 48px; }
 [data-os="android"] .m-row { min-height: 64px; }
 [data-os="android"] .fm-sheet__item { min-height: 60px; }
 [data-os="android"] .m-swatch { width: 48px; height: 48px; }
@@ -874,7 +881,7 @@ const M = {
   newFolderColor: 1, moveAfterCreate: null,
   /* Добавлено 27.08.2026 по спеке «Сверка прототипов с описанием работы»:
      диктофоны, источник записи, очередь отправки, подтверждение. */
-  devId: 'a1', micSrc: 'AIREC · 0335', confirm: null, hintsOpen: false, listen: null,
+  devId: 'a1', micSrc: 'Микрофон телефона', confirm: null, hintsOpen: false, listen: null,
   /* Откуда открыли запись — чтобы «назад» вернуло туда же, а не в общий список. */
   came: null,
   /* Шаблон, которым разбираются НОВЫЕ записи. Перенесён из настольного

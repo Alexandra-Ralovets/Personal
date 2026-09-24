@@ -559,9 +559,9 @@ function recCardActionsHtml(fileId, kind) {
   const f = FILES.find(x => x.id === fileId);
   if (!recNeedsCard(f)) return '';
   if (kind === 'm') {
-    return `<div class="m-rec__acts" style="margin:0 0 var(--size-4x)">
-      <button class="fm-btn fm-btn--primary" data-pickcard="${esc(fileId)}">${t('Указать карточку')}</button>
-      <button class="fm-btn" data-notclient="${esc(fileId)}">${t('Не клиент')}</button>
+    return `<div class="m-rec__acts" style="margin:0 var(--size-5x) var(--size-4x);width:auto;gap:var(--space-m);flex-wrap:wrap">
+      <button class="fm-btn fm-btn--primary" style="flex:1 1 auto" data-pickcard="${esc(fileId)}">${t('Указать карточку')}</button>
+      <button class="fm-btn" style="flex:1 1 auto" data-notclient="${esc(fileId)}">${t('Не клиент')}</button>
     </div>`;
   }
   return `<div class="fm-rec__acts" style="margin:0 0 var(--size-4x);width:100%">
