@@ -2,3 +2,5 @@
 .env.*
 !.env.example
 *.token
+
+__pycache__/
