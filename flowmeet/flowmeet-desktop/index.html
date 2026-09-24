@@ -1802,8 +1802,7 @@ function renderTop() {
     ${note ? `
       <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Выгрузить файлом" data-exportmenu="1">${ic(I.export)}</button>
       <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Ещё" data-notemenu="1">${ic(I.more)}</button>` : ''}
-    ${OS === 'mac' ? '' : `<button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Параметры" data-view="prefs">${ic(I.gear)}</button>`}
-    <button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Светлая / тёмная" id="btnTheme">${ic(I.moon)}</button>`;
+    ${OS === 'mac' ? '' : `<button class="fm-btn fm-btn--text fm-btn--icon fm-tip fm-tip--end" data-tip="Параметры" data-view="prefs">${ic(I.gear)}</button>`}`;
 }
 
 /* ============================ ВКЛАДКИ ЗАПИСИ ============================== */
@@ -2608,7 +2607,6 @@ const MACMENU = {
       ? mmi(S.listOff ? 'Показать список записей' : 'Скрыть список записей', '⌥⌘S', 'data-listtoggle="1"')
         + mmi('Расшифровка', '⌘1', 'data-gotab="transcript"')
       : mmiOff('Скрыть список записей', '⌥⌘S') + mmiOff('Расшифровка', '⌘1')) + SEP
-    + mmi('Светлое или тёмное оформление', '', 'data-themetoggle="1"')
     + mmi('Во весь экран', '⌃⌘F', 'data-win="max"'),
   /* Отмена записи — единственное необратимое действие, поэтому она есть и в
      строке меню: команда, доступная только в виджете, для macOS неполна. */
@@ -4150,11 +4148,6 @@ document.addEventListener('click', e => {
   if (hit('#btnList') || hit('[data-listtoggle]')) { S.listOff = !S.listOff; renderList(); macChrome(); return; }
   const gt = hit('[data-gotab]');
   if (gt) { S.tab = gt.dataset.gotab; render(); return; }
-  if (hit('#btnTheme') || hit('[data-themetoggle]')) {
-    const cur = document.documentElement.getAttribute('data-theme');
-    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-    return;
-  }
   if (hit('#btnAdd') || hit('[data-addrec]')) { showMenu($('#btnAdd'), MENU_ADD, { wide: true }); return; }
   if (hit('[data-upload]')) { closeMenu(); $('#fileIn').click(); return; }
   if (hit('[data-recnow]')) { closeMenu(); recStart(); return; }
@@ -4389,7 +4382,7 @@ addEventListener('scroll', () => { if (performance.now() - menuAt > 250) closeMe
    ?os=mac (платформенная рамка) · ?view=prefs|tray|spec
    ?screen=files|home|ask|templates|membership|note
    ?file=tz&tab=transcript · ?scope=folder&value=Продажи · ?settings=vocab
-   ?explore=integr · ?prefs=recording · ?theme=dark · ?list=off
+   ?explore=integr · ?prefs=recording · ?list=off
    ?screen=devices|outbox · ?rec=on|auto&hints=3 · ?confirm=cancel
    ?org=mandatory · ?profile=sales|support|hr|dev
    ?link=off · ?detector=down · ?disk=full · ?dev=off */
@@ -4397,7 +4390,6 @@ addEventListener('scroll', () => { if (performance.now() - menuAt > 250) closeMe
   const q = new URLSearchParams(location.search);
   setOs(q.get('os') || 'win');                    /* платформенная рамка: win | mac */
   if (q.get('lang')) setLang(q.get('lang'));
-  if (q.get('theme')) document.documentElement.setAttribute('data-theme', q.get('theme'));
   if (q.get('view')) S.view = q.get('view');
   if (q.get('screen')) S.screen = q.get('screen');
   if (q.get('scope')) S.scope = { kind: q.get('scope'), value: q.get('value') || null };

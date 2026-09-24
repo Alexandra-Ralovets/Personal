@@ -386,7 +386,7 @@ cd "$SCRATCH" && PLAYWRIGHT_BROWSERS_PATH=/tmp/corphub-cache/portal-pw/browsers 
 ?scope=folder&value=Продажи             раздел навигации
 ?file=tz&tab=transcript                 конкретная запись и вкладка
 ?settings=person   ?explore=integr   ?prefs=recording   ?folder=new
-?theme=dark   ?list=off
+?list=off
 ?sel=all | ?sel=3                       раздел с выбранными записями
 ?screen=devices | outbox                диктофоны · очередь отправки
 ?rec=on | auto | saved   &hints=3       идёт запись (сама или руками) · сохранена, N подсказок
@@ -639,3 +639,7 @@ PY
 - Состояние живой программной части FlowMeet (пять систем, что можно раздавать) —
   `../Peredacha-Pimenova-FlowMeet-opisanie-raboty.2026-08-26.md`.
 - Начальный бизнес-план устройства — `../Predzashchita-Device-FlowMeet.2026-08-17.md`.
+
+## Тёмная тема
+
+Снята 24.09.2026 по решению владельца: переключателя и параметра `?theme=dark` нет, прототип всегда светлый.

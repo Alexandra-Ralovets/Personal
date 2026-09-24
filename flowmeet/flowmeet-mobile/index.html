@@ -763,9 +763,6 @@ body {
     <button data-setos="ios">iOS</button>
     <button data-setos="android">Android</button>
   </span>
-  <span class="fm-plaque__switch">
-    <button data-theme-toggle="1">Светлая / тёмная</button>
-  </span>
   <!-- Что решила организация: режим записи, профиль подсказок, разрешения
        сервера. В продукте это приходит с сервера, и пользователь их не
        выбирает, поэтому переключатели стоят в ПЛАШКЕ ПРОТОТИПА, а экран
@@ -1113,7 +1110,6 @@ function screenFolders() {
         <span>${t('Организация включила режим «запись обязательна»: встречи записываются, прервать запись нельзя.')}</span></div>` : ''}
       ${!ORG.server ? `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}
         <span>${t('Сервер организации не задан. Запись не начинается.')}</span></div>` : ''}
-      ${recSessionCardHtml('m')}
       <div class="m-group">${smart.map(x => row(x.kind, null, t(x.label), x.icon)).join('')}</div>
       <div class="m-grouphead m-cap">${t('Папки')}</div>
       <div class="m-group">${FOLDERS.map(f => row('folder', f.name, esc(f.name), null, f.color)).join('')}</div>
@@ -2145,6 +2141,9 @@ function recOverlay() {
       </div>
       ${mand ? `<div class="m-warn m-cap">${ic(I.lock, 'fm-i--s')}
         <span>${t('Режим организации: запись обязательна. Пауза и отмена выключены.')}</span></div>` : ''}
+      <!-- Карточка клиента для этой записи: на главной её нет (там плашка читалась
+           как ошибка без записи), выбрать можно здесь, во время записи. -->
+      ${recSessionCardHtml('m')}
       <!-- ГЛАВНОЕ ОТЛИЧИЕ ПРОДУКТА: подсказка приходит во время разговора.
            Показана последняя, остальные — по нажатию, шторкой. -->
       <div class="m-hintbox">
@@ -2424,11 +2423,6 @@ document.addEventListener('click', e => {
   }
   const so = hit('[data-setos]');
   if (so) { setOs(so.dataset.setos); render(); return; }
-  if (hit('[data-theme-toggle]')) {
-    const cur = document.documentElement.getAttribute('data-theme');
-    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
-    return;
-  }
 
   /* --- навигация --- */
   if (hit('[data-back]')) { goBack(); return; }
@@ -2854,7 +2848,6 @@ function paintPlaque() {
   const q = new URLSearchParams(location.search);
   setOs(q.get('os') || 'ios');
   if (q.get('lang')) setLang(q.get('lang'));
-  if (q.get('theme')) document.documentElement.setAttribute('data-theme', q.get('theme'));
   if (q.get('screen')) M.screen = q.get('screen');
   if (q.get('scope')) { M.scope = { kind: q.get('scope'), value: q.get('value') || null }; M.screen = 'files'; }
   if (q.get('file') && FILES.some(f => f.id === q.get('file'))) { M.fileId = q.get('file'); M.screen = 'note'; }
