@@ -255,7 +255,6 @@ def main():
     data = {
         'date': C.DATE,
         'product': C.PRODUCT,
-        'known': C.KNOWN,
         'terms': C.TERMS,
         'rules': C.RULES,
         'goals': GOALS,
@@ -267,6 +266,12 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     for g in GOALS:
         w(os.path.join(out_dir, 'Требования_%s.md' % g['code']), md_goal(g))
+    doc = ['# Состояние постановки FlowMeet (внутренний документ)', '', C.KNOWN['lead'], '']
+    for k, v in C.KNOWN['facts']:
+        doc += ['## ' + k, '', v, '']
+    doc += ['---', '', C.KNOWN['refs'], '']
+    os.makedirs(os.path.join(ROOT, 'Документы'), exist_ok=True)
+    w(os.path.join(ROOT, 'Документы', 'Состояние-постановки.md'), '\n'.join(doc))
     print('готово: %d целей, %d кейсов, %d ФТ, %d приёмок' % (
         len(GOALS), sum(len(g['cases']) for g in GOALS),
         sum(len(g['fts']) for g in GOALS), sum(len(g['ac']) for g in GOALS)))
