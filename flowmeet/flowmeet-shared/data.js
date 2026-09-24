@@ -544,7 +544,7 @@ function recBannerHtml(f, kind) {
     title = t('Не клиент');
     note = t('В CRM не передаём.');
   } else if (recHasCard(f)) {
-    title = esc(f.card.name);
+    title = `<span class="m-data">${esc(f.card.name)}</span>`;   // имя карточки — данные, не интерфейс
     note = recBindNote(f);
   } else {
     title = t('Не указан ID клиента');
@@ -576,7 +576,7 @@ function crmHintHtml(h, kind) {
   if (!h || !h.crm) return '';
   if (!recHasCard({ card: SESSION.recCard })) return '';
   const cls = kind === 'm' ? 'm-hint__src m-cap' : 'fm-hint__src text-caption-2';
-  return `<p class="${cls}">${ic(I.book, 'fm-i--s')} ${t('Карточка CRM')} · ${esc(h.crm.client)}
+  return `<p class="${cls}">${ic(I.book, 'fm-i--s')} ${t('Карточка CRM')} · <span class="m-data">${esc(h.crm.client)}</span>
     · ${t(h.crm.step)}${h.crm.extra ? `. ${t(h.crm.extra)}` : ''}.
     ${t('Факты из CRM в подсказке не приходят.')}</p>`;
 }
@@ -647,8 +647,11 @@ function recBindNote(f) {
 }
 function recSessionCardHtml(kind) {
   const name = SESSION.recCard ? SESSION.recCard.name : null;
+  /* Имя карточки клиента — данные, а не интерфейс, тем же правилом, что речь
+     и конспекты записей: класс m-data выводит его из проверки английского
+     интерфейса. */
   const line = name
-    ? t('Карточка') + ': ' + name
+    ? `${t('Карточка')}: <span class="m-data">${esc(name)}</span>`
     : t('Не указан ID клиента. Без него запись не попадёт в CRM.');
   const pick = `<button class="fm-btn fm-btn--sm" type="button" data-pickcard="session">${t('Указать карточку')}</button>`;
   const clear = name
@@ -656,11 +659,11 @@ function recSessionCardHtml(kind) {
     : '';
   if (kind === 'm') {
     return `<div class="m-warn m-cap" style="margin:0 var(--size-5x) var(--size-4x)">
-      <span>${esc(line)}</span>
+      <span>${line}</span>
       <span style="display:flex;gap:var(--space-m);margin-top:var(--space-m)">${pick}${clear}</span>
     </div>`;
   }
-  return `<p class="fm-rec__where text-caption-2" style="margin:var(--size-3x) 0 0;text-align:center">${esc(line)}</p>
+  return `<p class="fm-rec__where text-caption-2" style="margin:var(--size-3x) 0 0;text-align:center">${line}</p>
     <div class="fm-rec__acts" style="margin-top:var(--space-m);justify-content:center">${pick}${clear}</div>`;
 }
 function recBindSession(cardId) {
@@ -747,7 +750,7 @@ const devRecsMb = id => Math.round(devRecs(id).reduce((a, r) => a + mbOf(r.sec),
 
 /* ─── СВЯЗЬ С СЕРВЕРОМ И ОЧЕРЕДЬ ОТПРАВКИ ──────────────────────────────────
    Звук идёт на сервер во время разговора — это носитель подсказок. Не открылось
-   соединение — запись всё равно доедет, а подсказки опоздают: честное состояние
+   соединение — запись всё равно доедет, а живых подсказок нет: честное состояние
    деградации, а не молчание. Очередь ничего не удаляет: пока запись не принята
    сервером, она остаётся в очереди. */
 const LINK = {
@@ -1739,8 +1742,8 @@ dictAdd({
   'Компетенции, запрещённые вопросы, вилка': 'Competencies, questions you must not ask, salary range',
   'Термины, решения по архитектуре, ограничения': 'Terms, architecture decisions, constraints',
   'Слушаем разговор — подсказка придёт, когда будет чем помочь': 'Listening — a prompt will appear when there is something to help with',
-  'Связь с сервером не открылась: запись доедет, подсказки опоздают.': 'No server connection: the recording will still arrive, the prompts will be late.',
-  'Связи с сервером нет: запись доедет, подсказки опоздают': 'No server connection: the recording will still arrive, the prompts will be late',
+  'Связь с сервером не открылась: запись доедет, живых подсказок нет.': 'No server connection: the recording will still arrive, there are no live prompts.',
+  'Связи с сервером нет: запись доедет, живых подсказок нет': 'No server connection: the recording will still arrive, there are no live prompts',
   'За эту встречу подсказок ещё не было.': 'No prompts during this meeting yet.',
   'Подсказки считает сервер организации по звуку разговора. Время каждой подсказки пишется в журнал — по нему видно, успевает ли она к разговору.':
     'Prompts are produced by your organisation server from the call audio. The time of every prompt goes into the log — that is how you see whether it keeps up with the conversation.',
@@ -1879,8 +1882,11 @@ dictAdd({
   'Принимаются': 'Accepted',
   'Запись начнётся сама, когда встречу займёт': 'Recording starts by itself when the meeting is taken by',
   'Автозапуск выключен: не выбрано ни одного приложения встреч': 'Auto-start is off: no meeting app is selected',
-  'Сохраним в «Без папки», источник — рабочий стол. Слышно обе стороны: ваш голос и голос собеседника идут разными дорожками в один файл.':
-    'We will save it to “Unfiled”, source — desktop. Both sides are audible: your voice and the other side go into one file as separate tracks.',
+  'Сохраним в «Без папки», источник — рабочий стол. Слышно обе стороны: ваш голос и голос собеседника сервер хранит раздельно.':
+    'We will save it to “Unfiled”, source — desktop. Both sides are audible: the server stores your voice and the other side separately.',
+  'Связь с сервером пропала: запись доедет, живых подсказок нет': 'Server connection lost: the recording will still arrive, there are no live prompts',
+  'Живых подсказок с диктофона нет: живой поток AIREC не прошёл приёмку.': 'No live prompts from the recorder: the AIREC live stream has not passed acceptance.',
+  'Текст появится, когда запись с диктофона дойдёт до сервера': 'The text will appear once the recorder’s file reaches the server',
   /* связь и очередь */
   'Отправка': 'Outbox',
   'Отправить сейчас': 'Send now',
@@ -1899,10 +1905,10 @@ dictAdd({
     'Server connection: up. Audio goes to the server during the call — prompts arrive in the moment.',
   'Связь с сервером есть. Звук идёт на сервер во время разговора — подсказки приходят в моменте.':
     'Server connection is up. Audio goes to the server during the call — prompts arrive in the moment.',
-  'Связи с сервером нет. Запись доедет, когда связь появится, — подсказки опоздают.':
-    'No server connection. The recording will arrive once the link is back — the prompts will be late.',
+  'Связи с сервером нет. Запись доедет, когда связь появится, — живых подсказок нет.':
+    'No server connection. The recording will arrive once the link is back — there are no live prompts.',
   'Связь есть — подсказки в моменте': 'Connected — prompts in the moment',
-  'Связи нет — запись доедет, подсказки опоздают': 'No connection — the recording will arrive, the prompts will be late',
+  'Связи нет — запись доедет, живых подсказок нет': 'No connection — the recording will arrive, there are no live prompts',
   'Записи ждут отправки на сервер': 'Recordings are waiting to be sent',
   'Запись уходит на сервер.': 'The recording is going to the server.',
   'Запись уходит на сервер организации.': 'The recording is going to the organisation server.',
@@ -2285,6 +2291,12 @@ dictAdd({
   'Карточка не указана — после стопа будет «нет id».':
     'Client ID is not set. Without it the recording cannot go to CRM.',
   'Карточка': 'Card',
+  'Сервер задан': 'Server set',
+  'В API приёма звука этого поля нет. Здесь только показ политики организации.': 'The audio intake API has no such field. This only shows the organisation policy.',
+  'Сообщить, когда файл принят': 'Notify when the file is accepted',
+  'Расшифровка уже есть': 'The transcript is ready',
+  'Устройства': 'Devices',
+  'FlowMeet для телефона — запись встреч и расшифровка на сервере организации.': 'FlowMeet for phone — meeting recording and transcription on the organisation server.',
   'Писать без карточки': 'Record without a card',
   'Нет id карточки': 'Client ID is not set',
   'Дыра Ц-1: в API приёма нет id карточки и «не клиент». Цель не закрыта.':
@@ -2302,6 +2314,7 @@ dictAdd({
   'Сервер организации не задан. Запись не начинается.':
     'The organisation server is not set. Recording does not start.',
   'Подсказки включены': 'Hints on',
+  'Подсказки выключены': 'Hints off',
   'Выкл': 'Off',
   'Вкл': 'On',
   'Подсказки выключены — запись идёт.': 'Hints are off — recording continues.',
@@ -2323,7 +2336,6 @@ dictAdd({
     'Recordings on a lost device are unprotected: anyone who knows the protocol can take them. No protection on the dictaphone itself.',
   'Диктофон к компьютеру не подключается — его берёт телефон. Здесь то, что уже забрали.':
     'The dictaphone does not pair to the computer — the phone does. This list is what was already pulled.',
-  'ноутбук не нужен': 'laptop not needed',
   'Источник': 'Source',
   'Источник — микрофон телефона': 'Source — phone microphone',
   'Отметки в записи': 'In-recording marks',

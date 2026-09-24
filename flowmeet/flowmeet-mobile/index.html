@@ -1098,7 +1098,7 @@ function screenFolders() {
            отправки. Полоса нажимается и ведёт на экран отправки. -->
       ${!LINK.live ? `<div class="m-linkbar is-off">
           <span class="m-linkbar__dot"></span>
-          <span class="m-linkbar__txt m-cap">${t('Связи нет — запись доедет, подсказки опоздают')}</span>
+          <span class="m-linkbar__txt m-cap">${t('Связи нет — запись доедет, живых подсказок нет')}</span>
         </div>` : ''}
       ${micFallback() ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
         <span>${t('Диктофон не на связи — записывает микрофон телефона.')}</span></div>` : ''}
@@ -1575,16 +1575,21 @@ function screenMore() {
 const micDevId = () => (DEVICES.find(d => d.name === M.micSrc) || {}).id || null;
 const micIsDevice = () => !!micDevId();
 const micFallback = () => { const d = devById(micDevId()); return !!d && d.link === 'off'; };
+/* Пишет диктофон AIREC. Живой поток с него независимая приёмка не прошла
+   (проверка 23.09.2026): живых подсказок и живого текста с диктофона экран
+   не показывает. AIREC-live — последний срез, после физической приёмки. */
+const micIsAirec = () => micIsDevice() && !micFallback();
+const hintsLive = () => LINK.live && SESSION.hintsOn && !micIsAirec();
 function recSourceLine() {
   if (micFallback()) return t('Диктофон не на связи — записывает микрофон телефона.');
-  if (micIsDevice()) return t('Источник') + ': ' + t(M.micSrc) + ' · ' + t('ноутбук не нужен');
+  if (micIsDevice()) return t('Источник') + ': ' + t(M.micSrc);
   return t('Источник — микрофон телефона');
 }
 function optRow(title, sub, right) {
   return `<div class="m-row m-row--inset" style="cursor:default">
     <span class="m-row__body">
-      <span class="m-row__title m-body">${title}</span>
-      ${sub ? `<span class="m-row__meta m-row__meta--wrap m-cap"><span>${sub}</span></span>` : ''}
+      <span class="m-row__title m-body">${t(title)}</span>
+      ${sub ? `<span class="m-row__meta m-row__meta--wrap m-cap"><span>${t(sub)}</span></span>` : ''}
     </span>
     <span class="m-row__right">${right || ''}</span></div>`;
 }
@@ -1798,7 +1803,7 @@ function linkBar(compact) {
       <span class="m-linkbar__dot"></span>
       <span class="m-linkbar__txt m-cap">${t(LINK.live
         ? (compact ? 'Связь есть — подсказки в моменте' : 'Связь с сервером есть. Звук идёт на сервер во время разговора — подсказки приходят в моменте.')
-        : (compact ? 'Связи нет — запись доедет, подсказки опоздают' : 'Связи с сервером нет. Запись доедет, когда связь появится, — подсказки опоздают.'))}</span>
+        : (compact ? 'Связи нет — запись доедет, живых подсказок нет' : 'Связи с сервером нет. Запись доедет, когда связь появится, — живых подсказок нет.'))}</span>
       ${QUEUE.length ? `<span class="fm-tag">${t('в очереди')} ${QUEUE.length}</span>` : ''}
     </div>`;
 }
@@ -1917,7 +1922,9 @@ const SHEETS = {
     .concat(FOLDERS.map(f => item(I.folder, f.name, `data-askfolder="${esc(f.name)}"`, M.ask.folder === f.name)))),
   addtpl: () => sheet(t('Шаблон разбора'), TEMPLATES.map(tpl => item(I.tpl, tpl.t, `data-addtpl="${esc(tpl.t)}"`))),
   pickcard: () => sheet(t('Указать карточку'),
-    CARDS.map(c => item(I.user, c.name, `data-bindcard="${esc(M.sheetId || '')}" data-card="${esc(c.id)}"`))),
+    /* Имя карточки клиента — данные CRM, не интерфейс; m-data выводит его из
+       проверки английского интерфейса, как речь и конспекты записей. */
+    CARDS.map(c => item(I.user, `<span class="m-data">${esc(c.name)}</span>`, `data-bindcard="${esc(M.sheetId || '')}" data-card="${esc(c.id)}"`))),
   row: () => {
     const f = FILES.find(x => x.id === M.sheetId);
     if (!f) return sheet('', []);
@@ -2027,6 +2034,7 @@ function item(icon, label, attrs, on, danger) {
 /* Шторки, которые нельзя перерисовывать на ходу: в них набирают текст. */
 const KEEP_SHEET = ['newfolder', 'newtpl', 'confirm'];
 function openSheet(kind, id) {
+  if (OFF_SHEETS.includes(kind)) return;
   M.sheet = kind; M.sheetId = id || null;
   $('#sheet').innerHTML = (SHEETS[kind] || (() => ''))();
   $('#scrim').classList.add('is-open');
@@ -2052,7 +2060,7 @@ function recTick(on) {
       M.rec.lines.push({ who: s.who, role: s.role, text: s.text, at: M.rec.sec });
       /* Подсказка идёт СЛЕДОМ за репликой, на которую отвечает. Правило одно на
          два прототипа и живёт в общей части (`hintsAfter`). */
-      if (LINK.live && SESSION.hintsOn) M.rec.hints = hintsAfter(ORG.hintProfile, M.rec.lines.length);
+      if (hintsLive()) M.rec.hints = hintsAfter(ORG.hintProfile, M.rec.lines.length);
       else M.rec.hints = [];
       render(); return;                               // строка пришла — перерисовываем целиком
     }
@@ -2105,7 +2113,8 @@ function recOverlay() {
   if (M.rec.on) {
     const lines = M.rec.lines;
     const mand = isMandatory();
-    const last = (SESSION.hintsOn && LINK.live) ? M.rec.hints[M.rec.hints.length - 1] : null;
+    const last = hintsLive() ? M.rec.hints[M.rec.hints.length - 1] : null;
+    const airec = micIsAirec();
     const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
     return `
     <div class="m-rec">
@@ -2132,8 +2141,10 @@ function recOverlay() {
       <!-- ГЛАВНОЕ ОТЛИЧИЕ ПРОДУКТА: подсказка приходит во время разговора.
            Показана последняя, остальные — по нажатию, шторкой. -->
       <div class="m-hintbox">
-        <div style="display:flex;align-items:center;gap:var(--space-m);margin:0 0 var(--size-3x)">
-          <span class="m-cap" style="flex:1 1 auto">${t(SESSION.hintsOn ? 'Подсказки включены' : 'Живых подсказок нет')}</span>
+        ${airec ? `<div class="m-hint__wait m-cap">${ic(I.alert, 'fm-i--s')}
+            <span>${t('Живых подсказок с диктофона нет: живой поток AIREC не прошёл приёмку.')}</span></div>`
+        : `<div style="display:flex;align-items:center;gap:var(--space-m);margin:0 0 var(--size-3x)">
+          <span class="m-cap" style="flex:1 1 auto">${t(!SESSION.hintsOn ? 'Подсказки выключены' : LINK.live ? 'Подсказки включены' : 'Живых подсказок нет')}</span>
           <button class="fm-btn fm-btn--sm" data-hintstog="1">${t(SESSION.hintsOn ? 'Выкл' : 'Вкл')}</button>
         </div>
         ${last
@@ -2153,10 +2164,11 @@ function recOverlay() {
                 ? 'Подсказки выключены — запись идёт.'
                 : LINK.live
                 ? 'Слушаем разговор — подсказка придёт, когда будет чем помочь'
-                : 'Связи с сервером нет: запись доедет, подсказки опоздают')}</span></div>`}
+                : 'Связи с сервером нет: запись доедет, живых подсказок нет')}</span></div>`}`}
       </div>
       <div class="m-rec__live" id="recLive">
-        ${lines.length ? lines.map((l, i) => `<p class="m-rec__line m-body">
+        ${airec ? `<div class="m-rec__wait m-sub">${t('Текст появится, когда запись с диктофона дойдёт до сервера')}</div>`
+          : lines.length ? lines.map((l, i) => `<p class="m-rec__line m-body">
             <b>${esc(l.who)}</b><br>${esc(l.text)}</p>`).join('')
           : `<div class="m-rec__wait m-sub">${ic(I.spin, 'fm-i--s')} ${t('Слушаем — текст появится, как только начнут говорить')}</div>`}
       </div>
@@ -2220,8 +2232,13 @@ const SCREENS = { folders: screenFolders, files: screenFiles, note: screenNote, 
 /* Кнопка записи живёт там, где действие уместно — на папках и в списке записей;
    на чужих разделах её нет, иначе она читается как «записать шаблон». */
 const FAB_ON = ['folders', 'files'];
+/* Снятое с живого экрана (contour-live-ui.mdc) не открывается и прямым адресом:
+   «Спросить ИИ», шаблоны, членство, отдельная «Отправка». Обход меню ссылкой
+   иначе возвращал бы в прототип лишний объём (проверка 23.09.2026). */
+const OFF_SCREENS = ['ask', 'templates', 'membership', 'outbox'];
+const OFF_SHEETS = ['askscope', 'addtpl', 'newtpl', 'tpl', 'share'];
 function render() {
-  if (M.screen === 'outbox') M.screen = 'folders';
+  if (OFF_SCREENS.includes(M.screen)) M.screen = 'folders';
   const fab = FAB_ON.includes(M.screen)
     ? `<button class="m-fab" data-recnow="1" aria-label="${t('Записать встречу')}">${ic(I.mic, 'fm-i--l')}</button>` : '';
   let body = (SCREENS[M.screen] || screenFolders)();
@@ -2868,7 +2885,7 @@ function paintPlaque() {
       M.rec.lines = REC_SRC().slice(0, lines).map((x, i) =>
         ({ who: x.who, role: x.role, text: x.text, at: (i + 1) * REC_STEP }));
       M.rec.sec = M.rec.lines.length * REC_STEP;
-      M.rec.hints = LINK.live ? hintsAfter(ORG.hintProfile, M.rec.lines.length) : [];
+      M.rec.hints = hintsLive() ? hintsAfter(ORG.hintProfile, M.rec.lines.length) : [];
       render();
     }
   }

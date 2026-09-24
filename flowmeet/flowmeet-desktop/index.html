@@ -2363,7 +2363,7 @@ function hintCard(h, fresh) {
 }
 /* Лента подсказок идущей записи: свежая сверху. Пока подсказок нет — честное
    состояние ожидания, а не пустое место. Связи с сервером нет — говорим прямо,
-   что подсказки опоздают: звук идёт на сервер, он их и считает. */
+   что живых подсказок нет: звук идёт на сервер, он их и считает. */
 function hintsBox() {
   const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
   const live = LINK.live && SESSION.hintsOn;
@@ -2378,7 +2378,7 @@ function hintsBox() {
       ${!SESSION.hintsOn ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
         <span>${t('Подсказки выключены — запись идёт.')}</span></div>` : ''}
       ${SESSION.hintsOn && !LINK.live ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
-        <span>${t('Связь с сервером не открылась: запись доедет, подсказки опоздают.')}</span></div>` : ''}
+        <span>${t('Связь с сервером не открылась: запись доедет, живых подсказок нет.')}</span></div>` : ''}
       <div class="fm-hints__list">
         ${list.length
           ? list.map((h, i) => hintCard(h, i === 0)).join('')
@@ -2444,9 +2444,9 @@ function screenDevices() {
    который пользователь встретит, обязан быть назван заранее. */
 function linkLine(short) {
   const text = short
-    ? (LINK.live ? 'Связь есть — подсказки в моменте' : 'Связи нет — запись доедет, подсказки опоздают')
+    ? (LINK.live ? 'Связь есть — подсказки в моменте' : 'Связи нет — запись доедет, живых подсказок нет')
     : (LINK.live ? 'Связь с сервером: есть. Звук идёт на сервер во время разговора — подсказки приходят в моменте.'
-                 : 'Связи с сервером нет. Запись доедет, когда связь появится, — подсказки опоздают.');
+                 : 'Связи с сервером нет. Запись доедет, когда связь появится, — живых подсказок нет.');
   return `<div class="fm-link ${LINK.live ? '' : 'is-off'} text-caption-1">
       <span class="fm-link__dot"></span>
       <span>${t(text)}</span>
@@ -2934,8 +2934,7 @@ function renderTrayAct() {
           </div>` : ''}
         <div class="fm-rec__time" id="recTime">${fmtTotal(S.rec.sec)}</div>
         <div class="fm-level" style="${S.rec.paused ? 'opacity:.3' : ''}">${bars}</div>
-        <p class="fm-rec__where text-caption-2" style="margin:0">Сохраним в «Без папки», источник — рабочий стол.
-          ${t('Слышно обе стороны: ваш голос и голос собеседника идут разными дорожками в один файл.')}</p>
+        <p class="fm-rec__where text-caption-2" style="margin:0">${t('Сохраним в «Без папки», источник — рабочий стол. Слышно обе стороны: ваш голос и голос собеседника сервер хранит раздельно.')}</p>
         ${mand ? `<div class="fm-warn text-caption-2" style="width:100%">${ic(I.lock, 'fm-i--s')}
           <span>${t('Режим организации: запись обязательна. Пауза и отмена выключены.')}</span></div>` : ''}
         <!-- ГЛАВНОЕ: подсказки в моменте. -->
@@ -3608,7 +3607,7 @@ function fmEvent(kind) {
     if (LINK.live) LINK.lastOk = Date.now();
     render();
     toast(LINK.live ? 'Связь с сервером вернулась — подсказки снова приходят в моменте'
-                    : 'Связь с сервером пропала: запись доедет, подсказки опоздают');
+                    : 'Связь с сервером пропала: запись доедет, живых подсказок нет');
     return;
   }
   if (kind === 'detector') {
