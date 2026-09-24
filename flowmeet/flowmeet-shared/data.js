@@ -488,11 +488,11 @@ const HINT_PROFILES = [
    с замеренными числами. */
 const HINTS = {
   sales: [
-    { seg: 3, kind: 'Ответ', title: '«Единичные случаи» — отвечайте их же числом',
+    { seg: 3, kind: 'Возражение', title: '«Единичные случаи» — отвечайте их же числом',
       body: 'Карта из выгрузки заказчика: 28% заявок уходят на повторную юридическую проверку, средняя потеря — четыре дня.',
       src: 'Возражения и ответы · отдел продаж',
       crm: { client: 'ООО «Норд»', step: 'Клиент по календарю',
-        extra: 'Открытой сделки нет. Во время звонка карточку не пишем.' } },
+        extra: 'Во время звонка карточку не пишем.' } },
     { seg: 5, kind: 'Ответ', title: 'Данные не покидают контур',
       body: 'Отдельный сервер внутри контура, обновления образом, распознавание речи на стороне заказчика. Сертификат приложить письмом после встречи.',
       src: 'Ответы на требования безопасности' },
@@ -501,7 +501,7 @@ const HINTS = {
        реплике, где про цену не спрашивали, и главный кадр продукта опровергал
        собственное правило «подсказка следом за репликой, на которую отвечает».
        Теперь 9 — вопрос заказчика про цену и скидку за объём. */
-    { seg: 9, kind: 'Прайс', title: 'Цена и правила скидок',
+    { seg: 9, kind: 'Факт', title: 'Цена и правила скидок',
       body: '1 200 ₽ за место в месяц при оплате за год. Скидка 10% — от 25 мест, 15% — от 50. Больше 15% — только с согласованием руководителя отдела.',
       note: 'Считаем по пишущим местам: читающие бесплатны.',
       src: 'Прайс-лист от 01.08.2026',
@@ -531,16 +531,31 @@ const HINTS = {
   ]
 };
 const hintsOf = profile => HINTS[profile] || [];
+/* Состояния подсказок из клиента 0.2.0 (status.*): выключены администратором,
+   без данных клиента, меньше подсказок, лимит на встречу исчерпан. Включаются
+   ссылкой ?hintstate=admin|grounding|fewer|budget — сами по себе не выводятся:
+   что именно считается «без данных клиента», знает сервер, а не прототип. */
+const HINT_STATES = {
+  admin: 'Подсказки выключены администратором',
+  grounding: 'Подсказки без данных клиента',
+  fewer: 'Меньше подсказок',
+  budget: 'Больше подсказок для этой встречи нет'
+};
+const hintStatusKey = () => (SESSION.hintsOn && ORG.hintState && HINT_STATES[ORG.hintState]) || '';
 const hintProfileName = id => (HINT_PROFILES.find(p => p.id === id) || HINT_PROFILES[0]).name;
 
 /* После звонка CRM не экран FlowMeet: видно следствие. kind: 'fm' десктоп, 'm' телефон. */
 function recBannerHtml(f, kind) {
   if (!f) return '';
-  const warn = kind === 'm' ? 'm-warn m-cap' : 'fm-warn text-caption-2';
+  const ok = recHasCard(f) || !!f.private;
+  const warn = (kind === 'm' ? 'm-warn m-cap' : 'fm-warn text-caption-2') + (ok ? (kind === 'm' ? ' m-warn--ok' : ' fm-warn--ok') : '');
   const k = recListKind(f);
   const tag = recListTagHtml(f);
   let title, note;
-  if (f.notClient) {
+  if (f.private) {
+    title = t('Приватная запись');
+    note = t('Осталась на этом устройстве и на сервер не ушла.');
+  } else if (f.notClient) {
     title = t('Не клиент');
     note = t('В CRM не передаём.');
   } else if (recHasCard(f)) {
@@ -550,14 +565,20 @@ function recBannerHtml(f, kind) {
     title = t('Не указан ID клиента');
     note = t('Информация не может быть передана в CRM.');
   }
-  return `<div class="${warn}" style="margin:0 0 var(--size-4x)">
-    ${ic(I.alert, 'fm-i--s')}
-    <span>${tag} <strong>${title}</strong> ${note}</span></div>`;
+  return `<div class="${warn}" style="margin:0 0 var(--size-4x);text-align:left">
+    ${ic(f.private ? I.lock : ok ? I.check : I.alert, 'fm-i--s')}
+    <span>${ok || f.notClient ? tag + ' ' : ''}<strong>${title}</strong> ${note}</span></div>`;
 }
 const crmBannerHtml = recBannerHtml;
 function recCardActionsHtml(fileId, kind) {
   const f = FILES.find(x => x.id === fileId);
-  if (!recNeedsCard(f)) return '';
+  if (!f || recHasCard(f) || f.private) return '';
+  if (f.notClient) {
+    /* «Не клиент» не окончательно: карточку можно указать позже (Ц-1, UC-3, альт. A). */
+    const one = `<button class="fm-btn" data-pickcard="${esc(fileId)}">${t('Всё же указать карточку')}</button>`;
+    return kind === 'm' ? `<div class="m-rec__acts" style="margin:0 var(--size-5x) var(--size-4x);width:auto">${one}</div>`
+      : `<div class="fm-rec__acts" style="margin:0 0 var(--size-4x);width:100%">${one}</div>`;
+  }
   if (kind === 'm') {
     return `<div class="m-rec__acts" style="margin:0 var(--size-5x) var(--size-4x);width:auto;gap:var(--space-m);flex-wrap:wrap">
       <button class="fm-btn fm-btn--primary" style="flex:1 1 auto" data-pickcard="${esc(fileId)}">${t('Указать карточку')}</button>
@@ -576,8 +597,8 @@ function crmHintHtml(h, kind) {
   if (!h || !h.crm) return '';
   if (!recHasCard({ card: SESSION.recCard })) return '';
   const cls = kind === 'm' ? 'm-hint__src m-cap' : 'fm-hint__src text-caption-2';
-  return `<p class="${cls}">${ic(I.book, 'fm-i--s')} ${t('Карточка CRM')} · <span class="m-data">${esc(h.crm.client)}</span>
-    · ${t(h.crm.step)}${h.crm.extra ? `. ${t(h.crm.extra)}` : ''}.
+  return `<p class="${cls}">${ic(I.book, 'fm-i--s')} ${t('Карточка CRM')} · <span class="m-data">${esc(SESSION.recCard.name)}</span>
+    · ${t(h.crm.step)}${h.crm.extra ? `. ${t(h.crm.extra).replace(/\.$/, '')}` : ''}.
     ${t('Факты из CRM в подсказке не приходят.')}</p>`;
 }
 function lostDeviceHtml(kind) {
@@ -629,8 +650,8 @@ const ORG = {
 function orgServerView() {
   return {
     set: !!ORG.server,
-    addr: LINK.server,
-    live: !!LINK.live
+    addr: ORG.server ? LINK.server : '—',
+    live: !!ORG.server && !!LINK.live
   };
 }
 const SESSION = { hintsOn: true, recCard: null, recBind: null };
@@ -638,10 +659,16 @@ const CARDS = [
   { id: 'nord', name: 'ООО «Норд»' }
 ];
 const recHasCard = f => !!(f && f.card && f.card.id);
-const recNeedsCard = f => !!(f && !f.notClient && !recHasCard(f));
+const recNeedsCard = f => !!(f && !f.notClient && !f.private && !recHasCard(f));
+const DRAFT_OFF = 'Разделение голосов выключено: черновик полей не строится, запись и текст сохранены.';
 function recBindNote(f) {
+  const n = recBindNoteBase(f);
+  return ORG.diarization === false ? t('Карточка указана.') + ' ' + t(DRAFT_OFF) : n;
+}
+function recBindNoteBase(f) {
   if (f && f.bind === 'phone') return t('Карточка по номеру контакта. Черновик полей — в системе продаж, до «Подтвердить».');
   if (f && f.bind === 'picked') return t('Карточку указали до записи. Черновик полей — в системе продаж, до «Подтвердить».');
+  if (f && f.bind === 'later') return t('Карточку указали после записи. Черновик полей — в системе продаж, до «Подтвердить».');
   if (f && f.bind === 'calendar') return t('Карточка из встречи календаря. Черновик полей — в системе продаж, до «Подтвердить».');
   return t('Встреча на карточке. Черновик полей — там, до «Подтвердить».');
 }
@@ -678,15 +705,22 @@ function recClearSessionCard() {
 }
 const recListKind = f => {
   if (!f) return 'sent';
+  if (f.private) return 'private';
   if ((f.send || 'sent') === 'queued') return 'queued';
   if (recNeedsCard(f)) return 'noid';
   return 'sent';
 };
 function recListTagHtml(f) {
   const k = recListKind(f);
+  if (k === 'private') return `<span class="fm-tag">${t('только на устройстве')}</span>`;
   if (k === 'queued') return `<span class="fm-tag fm-tag--orange">${t('ждёт сеть')}</span>`;
   if (k === 'noid') return `<span class="fm-tag fm-tag--orange">${t('нет ID клиента')}</span>`;
   return `<span class="fm-tag fm-tag--green">${t('на сервере')}</span>`;
+}
+/* Связь вернулась: очередь уходит на тот же сервер, метка «ждёт сеть» снимается. */
+function flushQueue() {
+  QUEUE.length = 0;
+  FILES.forEach(f => { if (f.send === 'queued') f.send = 'sent'; });
 }
 function recBindCard(fileId, cardId) {
   if (fileId === 'session') { recBindSession(cardId); return; }
@@ -695,7 +729,7 @@ function recBindCard(fileId, cardId) {
   if (!f || !c) return;
   f.card = { id: c.id, name: c.name };
   f.notClient = false;
-  f.bind = 'picked';
+  f.bind = 'later';
 }
 function recMarkNotClient(fileId) {
   const f = FILES.find(x => x.id === fileId);
@@ -716,7 +750,7 @@ const isMandatory = () => ORG.mode === 'mandatory';
 /* Причина отказа — одна на оба прототипа: пользователь обязан понимать, почему
    действие недоступно, а не встречать погашенную кнопку молча. */
 const MANDATORY_WHY = 'Организация включила режим «запись обязательна» — прервать или отменить запись встречи нельзя.';
-const PRIVATE_WHY = 'Приватный звонок разрешён сервером: запись такого разговора не начинается и на сервер не уходит.';
+const PRIVATE_WHY = 'Приватная запись разрешена сервером: она остаётся на этом устройстве, а всё, что уже ушло на сервер, отзывается.';
 
 /* ─── ДИКТОФОНЫ ────────────────────────────────────────────────────────────
    Живой контракт устройства с сервером — http-call-recorder (enroll / stream /
@@ -725,9 +759,40 @@ const PRIVATE_WHY = 'Приватный звонок разрешён серве
    Телефон — хозяин Bluetooth: связь есть или нет. Записи, которые ещё на
    диктофоне, забираются в общий список. Модели — снимок передачи 26.08. */
 const DEVICES = [
-  { id: 'a1', name: 'AIREC · 0335', serial: '214112250800335', link: 'bt' },
-  { id: 'b2', name: 'DOWAY · 7197', serial: 'K9THA17197', link: 'off' }
+  { id: 'a1', name: 'AIREC · 0335', serial: '214112250800335', link: 'bt',
+    battery: 100, mem: { free: 7.78, total: 7.8 }, len: '1h', noise: 'medium',
+    screenOn: false, autoImport: true, delAfter: false, stuck: false },
+  { id: 'b2', name: 'DOWAY · 7197', serial: 'K9THA17197', link: 'off',
+    battery: 18, mem: { free: 0.4, total: 7.8 }, len: '2h', noise: 'low',
+    screenOn: true, autoImport: true, delAfter: false, stuck: false }
 ];
+/* Заряд, память и настройки диктофона отдаёт САМ диктофон по Bluetooth клиенту
+   на телефоне (в клиенте 0.2.0: «Battery», «{free} of {total} free», «Dictaphone
+   settings»), а не сервер приёма. Раньше мы их сняли по контракту call-recorder —
+   это была ошибка слоя: контракт приёма и экран устройства про разное. */
+const DEV_LEN = ['30m', '1h', '2h', '3h'];
+const DEV_LEN_TXT = { '30m': '30 минут', '1h': '1 час', '2h': '2 часа', '3h': '3 часа' };
+const DEV_NOISE = ['off', 'low', 'medium', 'high'];
+const DEV_NOISE_TXT = { off: 'Выкл', low: 'Низкое', medium: 'Среднее', high: 'Высокое' };
+const devMemText = d => `${num(d.mem.free, 2)} ${t('из')} ${num(d.mem.total, 1)} ${t('ГБ свободно')}`;
+const devLowBattery = d => d.battery <= 20;
+const devLowStorage = d => d.mem.free / d.mem.total < 0.1;
+function devCycle(id, key) {
+  const d = devById(id); if (!d) return;
+  if (key === 'len') d.len = DEV_LEN[(DEV_LEN.indexOf(d.len) + 1) % DEV_LEN.length];
+  else if (key === 'noise') d.noise = DEV_NOISE[(DEV_NOISE.indexOf(d.noise) + 1) % DEV_NOISE.length];
+  else d[key] = !d[key];
+}
+/* Сервер не принял запись диктофона: строка остаётся, человеку даны два выхода. */
+function devRetry(id) { const d = devById(id); if (d) d.stuck = false; }
+function devDiscard(id) {
+  const d = devById(id); if (!d) return;
+  const i = DEV_RECS.findIndex(r => r.dev === id); if (i >= 0) DEV_RECS.splice(i, 1);
+  d.stuck = false;
+}
+function devForget(id) {
+  const i = DEVICES.findIndex(x => x.id === id); if (i >= 0) DEVICES.splice(i, 1);
+}
 /* Записи, которые лежат на устройстве и ещё не забраны. Скачивание переносит
    их в общий список записей — то же действие, что «Забрать с диктофона». */
 const DEV_RECS = [
@@ -1461,14 +1526,15 @@ dictAdd({
   'Чего не хватает в приложении. Идеи читает команда направления.': 'What the app is missing. Ideas are read by the product team.',
   'Опишите идею': 'Describe your idea',
   'Начать запись': 'Start recording',
-  'Или горячие клавиши: Ctrl + Shift + R': 'Or press Ctrl + Shift + R',
+  'Или сочетание клавиш: Ctrl + Shift + R': 'Or press Ctrl + Shift + R',
+  'Расшифровка соберётся после обработки': 'The transcript will be built after processing',
+  'Связи с сервера нет: текст соберётся после обработки': 'No server connection: the text will be built after processing',
   'Идёт запись встречи': 'Recording the meeting',
   'Запись на паузе': 'Recording paused',
   'Продолжить': 'Resume',
   'Остановить': 'Stop',
   'Сохраним в «Без папки», источник — рабочий стол': 'Will be saved to “Unfiled”, source — desktop',
   'Запись сохранена': 'Recording saved',
-  'Расшифровка соберётся после обработки': 'The transcript will be built after processing',
   'Записать ещё': 'Record again',
   'Открыть запись': 'Open recording',
   'Последние записи': 'Recent recordings',
@@ -1880,7 +1946,7 @@ dictAdd({
     'On iPhone accepting device-management policy has not been confirmed by engineering yet',
   'Только Android': 'Android only',
   'Принимаются': 'Accepted',
-  'Запись начнётся сама, когда встречу займёт': 'Recording starts by itself when the meeting is taken by',
+  'Запись начнётся сама при встрече в:': 'Recording starts by itself for meetings in:',
   'Автозапуск выключен: не выбрано ни одного приложения встреч': 'Auto-start is off: no meeting app is selected',
   'Сохраним в «Без папки», источник — рабочий стол. Слышно обе стороны: ваш голос и голос собеседника сервер хранит раздельно.':
     'We will save it to “Unfiled”, source — desktop. Both sides are audible: the server stores your voice and the other side separately.',
@@ -2149,6 +2215,45 @@ dictAdd({
 });
 
 dictAdd({ 'Ответ': 'Answer' });
+dictAdd({
+  'Факт': 'Fact', 'Следующий шаг': 'Next step',
+  'ГБ свободно': 'GB free',
+  'Диктофон почти разряжен.': 'The recorder is low on charge.',
+  'В диктофоне почти не осталось места.': 'The recorder is nearly out of room.',
+  'Настройки диктофона': 'Recorder settings',
+  'Длина одной записи': 'Length of one recording',
+  'Длинная встреча придёт несколькими записями': 'A long meeting arrives as several recordings',
+  '30 минут': '30 minutes', '1 час': '1 hour', '2 часа': '2 hours', '3 часа': '3 hours',
+  'Шумоподавление': 'Noise suppression', 'Низкое': 'Low', 'Среднее': 'Medium', 'Высокое': 'High',
+  'Держать экран включённым': 'Keep the screen on',
+  'Ввозить записи автоматически': 'Bring recordings in automatically',
+  'Стереть с диктофона после отправки': 'Erase from the recorder once it is sent',
+  'Сервер не принял запись с диктофона': 'The server would not take a recorder recording',
+  'Отправить снова': 'Try sending again',
+  'Удалить с этого телефона': 'Delete from this phone',
+  'Подключить диктофон': 'Add a recorder',
+  'Забыть устройство': 'Forget this device',
+  'Записи останутся на диктофоне.': 'The recordings stay on the recorder.',
+  'Забыть это устройство?': 'Forget this device?',
+  'Забыть': 'Forget', 'Оставить': 'Keep',
+  'Ищем диктофоны рядом': 'Looking for recorders nearby',
+  'Рядом новых диктофонов нет. Включите диктофон и поднесите его к телефону.': 'No new recorders nearby. Turn the recorder on and bring it close to the phone.',
+  'Сделать приватной': 'Make private',
+  'Сделать эту запись приватной?': 'Make this recording private?',
+  'Запись останется только на этом устройстве, а всё, что уже ушло на сервер, будет отозвано.': 'It stays on this device only, and whatever already left for the server is withdrawn.',
+  'Идёт приватная запись': 'A private recording is running',
+  'Приватная запись': 'Private recording',
+  'только на устройстве': 'device only',
+  'Осталась на этом устройстве и на сервер не ушла.': 'It stayed on this device and did not reach the server.',
+  'Приватная запись остаётся на устройстве сотрудника, а уже отправленное отзывается с сервера.': 'A private recording stays on the employee’s device; whatever was already sent is withdrawn from the server.',
+  'Разрешено ли сделать запись приватной, задаёт организация.': 'Whether a recording may be made private is set by the organisation.',
+  'Приватная запись разрешена сервером: она остаётся на этом устройстве, а всё, что уже ушло на сервер, отзывается.': 'A private recording is allowed by the server: it stays on this device, and whatever already left for the server is withdrawn.',
+  'Подсказки выключены администратором': 'Hints are switched off by your administrator',
+  'Подсказки без данных клиента': 'Hints without customer data',
+  'Меньше подсказок': 'Fewer hints',
+  'Больше подсказок для этой встречи нет': 'No more hints for this meeting',
+  'Диктофоны': 'Recorders'
+});
 
 /* Статус относительно живого продукта. «В продукте» — передача Пименова 26.08
    (запись, подсказки, расшифровка, список файлов, диктофоны, очередь, режим
@@ -2271,8 +2376,8 @@ dictAdd({
   'В CRM не передаём.': 'It is not sent to CRM.',
   'Очередь загрузки': 'Upload queue',
   'Ждут загрузки на сервер компании': 'Waiting to upload to the company server',
-  'Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.':
-    'These recordings are waiting to upload to the company server. They must first be moved to the phone — then the upload starts.',
+  'Записи с диктофона скачиваются на телефон и уходят на сервер компании автоматически.':
+    'Recordings from the recorder are downloaded to the phone and sent to the company server automatically.',
   'Если диктофон потеряется, записи с него сможет прослушать кто угодно.':
     'If the recorder is lost, anyone can listen to the recordings on it.',
   'Факты из CRM в подсказке не приходят.': 'CRM facts do not arrive in the hint.',
@@ -2291,6 +2396,15 @@ dictAdd({
   'Карточка не указана — после стопа будет «нет id».':
     'Client ID is not set. Without it the recording cannot go to CRM.',
   'Карточка': 'Card',
+  'Это не встреча?': 'Not a meeting?',
+  'Запись будет удалена и на сервер не уйдёт.': 'The recording will be deleted and will not reach the server.',
+  'Удалить запись': 'Delete recording',
+  'Оставить запись': 'Keep recording',
+  'Связи нет — файл встал в очередь отправки и уйдёт сам.': 'No connection — the file was queued and will be sent by itself.',
+  'Карточка указана.': 'The card is set.',
+  'Всё же указать карточку': 'Pick a card after all',
+  'Разделение голосов выключено: черновик полей не строится, запись и текст сохранены.': 'Speaker separation is off: the field draft is not built, the recording and text are kept.',
+  'Карточку указали после записи. Черновик полей — в системе продаж, до «Подтвердить».': 'The card was picked after the recording. The field draft is in sales, until Confirm.',
   'Сервер задан': 'Server set',
   'В API приёма звука этого поля нет. Здесь только показ политики организации.': 'The audio intake API has no such field. This only shows the organisation policy.',
   'Сообщить, когда файл принят': 'Notify when the file is accepted',
@@ -2329,8 +2443,7 @@ dictAdd({
   'Внутренняя планёрка — в CRM продаж не кладём.': 'Internal standup — not a sales CRM record.',
   'Карточка CRM': 'CRM card',
   'Клиент по календарю': 'Client from calendar',
-  'Открытой сделки нет. Во время звонка карточку не пишем.':
-    'No open deal. Do not write the card during the call.',
+  'Во время звонка карточку не пишем.': 'Do not write the card during the call.',
   'Сумму в сделку во время звонка не пишем.': 'Do not write the amount into the deal during the call.',
   'Записи на потерянном устройстве не защищены: их снимет любой, кто знает протокол. Защиты на самом диктофоне нет.':
     'Recordings on a lost device are unprotected: anyone who knows the protocol can take them. No protection on the dictaphone itself.',

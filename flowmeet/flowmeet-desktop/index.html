@@ -1173,6 +1173,8 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
   background: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--text-primary);
 }
 .fm-warn--danger { background: var(--danger-bg); border-color: var(--danger-border); }
+/* Успех — не предупреждение: карточка привязана, всё в порядке (F-26). */
+.fm-warn--ok { background: var(--tag-green-bg); border-color: var(--tag-green-border); }
 </style>
 </head>
 <body>
@@ -1375,18 +1377,6 @@ html[data-os="mac"] ::-webkit-scrollbar-track { background: transparent; }
      операционной системы — проводник в Windows, Finder в macOS. Подпись пункта
      нейтральна намеренно: она называет действие, а не имя чужой программы. -->
 <input type="file" id="fileIn" accept="audio/*,video/*" multiple style="display:none">
-
-<!-- ПЛАВАЮЩИЙ ТУЛБАР ВЫДЕЛЕНИЯ -->
-<div class="fm-seltool" id="seltool">
-  <button class="fm-fmt">Текст <svg class="fm-i fm-i--s" viewBox="0 0 16 16"><path d="M4 6.5 8 10.5 12 6.5"/></svg></button>
-  <span class="fm-seltool__sep"></span>
-  <button class="fm-fmt" style="font-weight:500">Ж</button>
-  <button class="fm-fmt" style="font-style:italic">К</button>
-  <button class="fm-fmt" style="text-decoration:underline">Ч</button>
-  <button class="fm-fmt" style="text-decoration:line-through">З</button>
-  <span class="fm-seltool__sep"></span>
-  <button class="fm-fmt fm-tip" data-tip="Код"><svg class="fm-i fm-i--s" viewBox="0 0 16 16"><path d="M6 4.5 2.5 8 6 11.5M10 4.5 13.5 8 10 11.5"/></svg></button>
-</div>
 
 <!-- МОДАЛЬНЫЕ ОКНА -->
 <div class="fm-scrim" id="scrimSettings">
@@ -1765,7 +1755,7 @@ function renderNav() {
   const onFiles = S.screen === 'files';
   const act = (k, v) => onFiles && S.scope.kind === k && S.scope.value === (v || null);
   $('#navScroll').innerHTML = `
-    ${navItem({ icon: I.device, text: t('Очередь загрузки'), count: DEV_RECS.length,
+    ${navItem({ icon: I.device, text: t('Диктофоны'), count: DEV_RECS.length,
                 countLabel: t('Ждут загрузки на сервер компании'),
                 active: S.screen === 'devices', attrs: 'data-go="devices"' })}
     <hr>
@@ -2376,6 +2366,7 @@ function hintsBox() {
       <p class="fm-hint__n text-caption-2" style="margin:0 0 var(--space-m)">${t('Профиль задаёт')} ${t(prof.owner)}</p>
       ${!SESSION.hintsOn ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
         <span>${t('Подсказки выключены — запись идёт.')}</span></div>` : ''}
+      ${hintStatusKey() ? `<p class="fm-hint__n text-caption-2" style="margin:0 0 var(--space-m)">${t(hintStatusKey())}</p>` : ''}
       ${SESSION.hintsOn && !LINK.live ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}
         <span>${t('Связь с сервером не открылась: запись доедет, живых подсказок нет.')}</span></div>` : ''}
       <div class="fm-hints__list">
@@ -2409,6 +2400,15 @@ function devCard(d) {
         <span class="text-caption-2" style="color:var(--text-complimentary)"><span>${t('серийный номер')}</span> ${esc(d.serial)}</span>
       </div>
       ${off ? `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Устройство не отвечает.')}</p>` : ''}
+      <div class="text-caption-2" style="display:flex;gap:var(--size-6x);color:var(--text-complimentary)">
+        <span>${t('Заряд')}: <strong class="text-body-3" style="color:var(--text-primary)">${d.battery}%</strong></span>
+        <span>${t('Память')}: <strong class="text-body-3" style="color:var(--text-primary)">${devMemText(d)}</strong></span>
+      </div>
+      ${devLowBattery(d) ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}<span>${t('Диктофон почти разряжен.')}</span></div>` : ''}
+      ${devLowStorage(d) ? `<div class="fm-warn text-caption-2">${ic(I.alert, 'fm-i--s')}<span>${t('В диктофоне почти не осталось места.')}</span></div>` : ''}
+      ${d.stuck ? `<div class="fm-warn fm-warn--danger text-caption-2">${ic(I.alert, 'fm-i--s')}<span>${t('Сервер не принял запись с диктофона')}</span>
+        <button class="fm-btn fm-btn--sm" data-devretry="${d.id}" style="margin-left:auto">${t('Отправить снова')}</button>
+        <button class="fm-btn fm-btn--sm" data-devdiscard="${d.id}">${t('Удалить с этого телефона')}</button></div>` : ''}
       ${recs.length
           ? `<div>
               ${recs.map(r => `<div class="fm-qrow">
@@ -2417,7 +2417,7 @@ function devCard(d) {
                     <p class="fm-qrow__m text-caption-2">${esc(fmtShort(r.ts))} · ${esc(fmtDur(r.sec))}</p>
                   </div>
                 </div>`).join('')}
-              <p class="fm-hint__n text-caption-2" style="margin:var(--space-m) 0 0">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
+              <p class="fm-hint__n text-caption-2" style="margin:var(--space-m) 0 0">${t('Записи с диктофона скачиваются на телефон и уходят на сервер компании автоматически.')}</p>
             </div>`
           : `<p class="fm-hint__n text-caption-2" style="margin:0">${t('Новых записей нет.')}</p>`}
     </div>`;
@@ -2426,9 +2426,9 @@ function screenDevices() {
   return `
     <div class="fm-page">
       <div class="fm-page__head">
-        <h1 class="text-header-1">${t('Очередь загрузки')}</h1>
+        <h1 class="text-header-1">${t('Диктофоны')}</h1>
       </div>
-      <p class="fm-pane__lead text-body-2">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
+      <p class="fm-pane__lead text-body-2">${t('Записи с диктофона скачиваются на телефон и уходят на сервер компании автоматически.')}</p>
       ${lostDeviceHtml('fm')}
       <div style="display:flex;flex-direction:column;gap:var(--size-4x)">
         ${DEVICES.map(devCard).join('')}
@@ -2588,7 +2588,7 @@ const MACMENU = {
     + mmi('Скрыть FlowMeet', '⌘H', 'data-win="min"')
     + mmi('Завершить FlowMeet', '⌘Q', 'data-win="close"'),
   file: () => mmi('Загрузить файл…', '⌘O', 'data-upload="1"')
-    + mmi(t('Очередь загрузки'), '', 'data-fromdevice="1"') + SEP
+    + mmi(t('Диктофоны'), '', 'data-fromdevice="1"') + SEP
     /* HIG ждёт в «Файле» группу «Open Recent». Подменю прототип не рисует,
        поэтому три последние записи стоят плоской группой — они настоящие. */
     + `<p class="fm-menu__label text-subheader-2">${t('Открыть недавнюю запись')}</p>`
@@ -2783,10 +2783,10 @@ const PREFS = {
     <div class="fm-note text-body-3" style="margin:var(--size-3x) 0">${ic(I.ai, 'fm-i--s')}
       <span>Подсказка приходит событием на том же канале, что звук. Какой текст брать из карточки сделки — в этом API нет.</span></div>
     <div class="fm-sect"><h2 class="text-header-2">Что можно не записывать</h2></div>
-    ${opt('Приватный звонок', 'В API приёма звука этого поля нет. Здесь только показ политики организации — не переключатель.',
+    ${opt('Приватная запись', 'Разрешено ли сделать запись приватной, задаёт организация.',
       `<span class="fm-tag">${t(ORG.privateCalls ? 'Разрешён' : 'Запрещён')}</span>`)}
     <p class="fm-legal text-caption-2">${ORG.privateCalls
-      ? 'Разговор, помеченный приватным, не записывается и на сервер не уходит.'
+      ? 'Приватная запись остаётся на устройстве сотрудника, а уже отправленное отзывается с сервера.'
       : 'Приватные звонки запрещены сервером: записывается любой разговор, включая личный.'}</p>
     <div class="fm-sect"><h2 class="text-header-2">Сервер организации</h2></div>
     <p class="fm-pane__lead text-body-2">${t('Куда уходит звук, задаёт администратор. В приложении адрес только показан.')}</p>
@@ -2879,7 +2879,7 @@ function recStart(auto) {
     SESSION.recCard = CARDS[0];
     SESSION.recBind = 'calendar';
   }
-  S.rec = { on: true, paused: false, sec: 0, saved: null, auto: auto || null, hints: [] };
+  S.rec = { on: true, paused: false, sec: 0, saved: null, auto: auto || null, hints: [], private: false };
   S.view = 'tray'; recTick(true); render();
 }
 /* Отмена записи — единственное необратимое действие, поэтому только через
@@ -2887,6 +2887,7 @@ function recStart(auto) {
    сервер не уходит. */
 function recCancel(falseAlarm) {
   const wasAuto = S.rec.auto;
+  recClearSessionCard();
   S.rec = { on: false, paused: false, sec: 0, saved: null, auto: null, hints: [] };
   recTick(false); render();
   toast(falseAlarm
@@ -2901,14 +2902,16 @@ function recStop() {
     folder: null, src: 'Рабочий стол', custom: [],
     transcript: [], transcriptEmpty: true, summaryEmpty: true,
     card: SESSION.recCard ? { id: SESSION.recCard.id, name: SESSION.recCard.name } : null,
-    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null
+    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null,
+    ...(S.rec.private ? { private: true, send: 'private', card: null, bind: null } : {})
   });
   FILES.unshift(n);
+  recClearSessionCard();                         // карточка была на ЭТУ запись: следующая не наследует её (F-01)
   applyLang();                                   // выводимые строки записи собираются из ts и sec
   /* Связи нет — запись не теряется, а встаёт в очередь отправки: очередь
      ничего не удаляет, пока сервер не подтвердил приём. */
-  if (!LINK.live) QUEUE.push({ id: 'q' + n.id, title: n.title, sec, state: 'wait' });
-  S.rec = { on: false, paused: false, sec: 0, saved: n.id, auto: null, hints: [] };
+  if (!LINK.live && !n.private) QUEUE.push({ id: 'q' + n.id, title: n.title, sec, state: 'wait' });
+  S.rec = { on: false, paused: false, sec: 0, saved: n.id, auto: null, hints: [], private: false };
   recTick(false); render();
 }
 function renderTrayAct() {
@@ -2936,7 +2939,10 @@ function renderTrayAct() {
         ${mand ? `<div class="fm-warn text-caption-2" style="width:100%">${ic(I.lock, 'fm-i--s')}
           <span>${t('Режим организации: запись обязательна. Пауза и отмена выключены.')}</span></div>` : ''}
         <!-- ГЛАВНОЕ: подсказки в моменте. -->
-        <div style="width:100%">${hintsBox()}</div>
+        ${S.rec.private
+          ? `<div class="fm-warn text-caption-2" style="width:100%">${ic(I.lock, 'fm-i--s')}<span><strong>${t('Идёт приватная запись')}</strong> ${t('Приватная запись остаётся на этом устройстве и на сервер не уходит.')}</span></div>`
+          : `<div style="width:100%">${hintsBox()}</div>
+             ${ORG.privateCalls ? `<button class="fm-btn fm-btn--sm" data-private="1" style="align-self:flex-start">${ic(I.lock, 'fm-i--s')} ${t('Сделать приватной')}</button>` : ''}`}
         <div class="fm-rec__acts">
           <button class="fm-btn ${mand ? 'is-locked' : ''}" data-recpause="1">${S.rec.paused ? 'Продолжить' : 'Пауза'}</button>
           <button class="fm-btn ${mand ? 'is-locked' : ''}" data-reccancel="1">Отменить</button>
@@ -2956,10 +2962,11 @@ function renderTrayAct() {
           ${LINK.live ? t('Запись уходит на сервер.') : t('Связи нет — запись встала в очередь отправки и уйдёт сама.')}</p>
         ${crmBannerHtml(f, 'fm')}
         ${f ? recCardActionsHtml(f.id, 'fm') : ''}
-        <div class="fm-rec__acts">
+        <div class="fm-rec__acts" style="flex-wrap:wrap;justify-content:center">
           <button class="fm-btn" data-recnew="1">Записать ещё</button>
-          <button class="fm-btn fm-btn--primary" data-file="${S.rec.saved}" data-view="app">Открыть запись</button>
+          <button class="fm-btn ${f && recNeedsCard(f) ? '' : 'fm-btn--primary'}" data-file="${S.rec.saved}" data-view="app">Открыть запись</button>
         </div>
+        <button class="fm-btn fm-btn--text" data-savedclose="1">${t('Закрыть')}</button>
       </div>`;
     return;
   }
@@ -2986,10 +2993,10 @@ function renderTrayAct() {
     </button>
     ${recSessionCardHtml('fm')}
     <p class="fm-rec__where text-caption-2" style="margin:var(--space-m) 0 0;text-align:center">${
-      OS === 'mac' ? 'Или сочетание клавиш: ⇧⌘R' : 'Или горячие клавиши: Ctrl + Shift + R'}</p>
+      OS === 'mac' ? 'Или сочетание клавиш: ⇧⌘R' : 'Или сочетание клавиш: Ctrl + Shift + R'}</p>
     <p class="fm-rec__where text-caption-2" style="margin:var(--space-m) 0 0;text-align:center">${
       meet.length
-        ? t('Запись начнётся сама, когда встречу займёт') + ' ' + meet.map(t).join(', ')
+        ? t('Запись начнётся сама при встрече в:') + ' ' + meet.map(t).join(', ')
         : t('Автозапуск выключен: не выбрано ни одного приложения встреч')}</p>
     ${isMandatory() ? `<div class="fm-warn text-caption-2" style="margin-top:var(--size-3x)">${ic(I.lock, 'fm-i--s')}
       <span>${t('Режим организации: запись обязательна. Прервать и отменить запись нельзя.')}</span></div>` : ''}
@@ -3026,7 +3033,7 @@ const SET = {
     <div class="fm-sect" style="margin-top:var(--size-5x)"><h2 class="text-header-2">Язык интерфейса</h2></div>
     ${opt('Язык интерфейса', 'Язык меню и подписей', langSel())}
     <div class="fm-sect"><h2 class="text-header-2">Способы входа</h2></div>
-    ${opt('Учётная запись организации', 'a.ralovets@infomaximum.com', '<button class="fm-btn fm-btn--sm" data-passwd="1">Сменить пароль</button>')}
+    ${opt('Учётная запись организации', 'a.ralovets@infomaximum.com', '')}
     ${opt('Единый вход организации', 'Вход по корпоративной учётной записи', '<span class="fm-tag fm-tag--green">Подключён</span>')}
     <!-- Пароля у устройства нет: приложение подписывает запросы ключом, и
          секретная половина ключа машину не покидает. Это сильная сторона
@@ -3484,7 +3491,7 @@ const MENU_EXPORT = mi(I.file, 'Расшифровка (.txt)', 'data-export="tr
 
 const MENU_ADD = mi(I.download, 'Загрузить файл…', 'data-upload="1"')
   + mi(I.mic, 'Записать сейчас', 'data-recnow="1"')
-  + mi(I.device, t('Очередь загрузки'), 'data-fromdevice="1"');
+  + mi(I.device, t('Диктофоны'), 'data-fromdevice="1"');
 const MENU_MOVE = id => `<p class="fm-menu__label text-subheader-2">Переместить в папку</p>`
   + FOLDERS.map(f => `<button class="fm-menu__item" data-moveto="${esc(f.name)}" data-mid="${id}">
       <span class="fm-navitem__dot" style="background:${f.color}"></span><span>${esc(f.name)}</span></button>`).join('')
@@ -3602,7 +3609,7 @@ function fmEvent(kind) {
   }
   if (kind === 'link') {
     LINK.live = !LINK.live;
-    if (LINK.live) LINK.lastOk = Date.now();
+    if (LINK.live) { LINK.lastOk = Date.now(); flushQueue(); }
     render();
     toast(LINK.live ? 'Связь с сервером вернулась — подсказки снова приходят в моменте'
                     : 'Связь с сервером пропала: запись доедет, живых подсказок нет');
@@ -3741,6 +3748,8 @@ document.addEventListener('click', e => {
   const sw = hit('[data-swatch]');
   if (sw) { S.newFolder.color = +sw.dataset.swatch; renderFolderModal(); return; }
   if (hit('#folderSave')) {
+    const nm = S.newFolder.name.trim();
+    if (FOLDERS.some(f => f.name.toLowerCase() === nm.toLowerCase())) { toast(t('Папка с таким названием уже есть')); return; }
     FOLDERS.push({ name: S.newFolder.name.trim(), color: SWATCH[S.newFolder.color] });
     $('#scrimFolder').classList.remove('is-open');
     S.scope = { kind: 'folder', value: S.newFolder.name.trim() }; S.screen = 'files'; render(); return;
@@ -4197,7 +4206,19 @@ document.addEventListener('click', e => {
   }
   /* Ложная тревога автостарта: микрофон занял не разговор. Файл удаляется и на
      сервер не уходит — иначе автостарт читался бы как «пишет всё подряд». */
-  if (hit('[data-falsealarm]')) { recCancel(true); return; }
+  const dr = hit('[data-devretry]'); if (dr) { devRetry(dr.dataset.devretry); render(); return; }
+  const dd = hit('[data-devdiscard]'); if (dd) { devDiscard(dd.dataset.devdiscard); render(); return; }
+  if (hit('[data-private]')) {
+    askConfirm('Сделать эту запись приватной?', 'Запись останется только на этом устройстве, а всё, что уже ушло на сервер, будет отозвано.',
+      'Сделать приватной', () => { S.rec.private = true; S.rec.hints = []; renderTrayAct(); }, 'Отмена');
+    return;
+  }
+  if (hit('[data-savedclose]')) { S.rec.saved = null; renderTrayAct(); return; }
+  if (hit('[data-falsealarm]')) {
+    askConfirm('Это не встреча?', 'Запись будет удалена и на сервер не уйдёт.', 'Удалить запись',
+      () => recCancel(true), 'Оставить запись');
+    return;
+  }
   if (hit('[data-detectorup]')) {
     S.detector = 'ok'; renderTrayAct();
     toast('FlowMeet перезапущен — автоматическая запись снова работает'); return;
@@ -4294,19 +4315,27 @@ document.addEventListener('click', e => {
 $('#fileIn').addEventListener('change', e => {
   const files = [...e.target.files];
   if (!files.length) return;
+  /* Загрузка файла проходит те же проверки, что запись (F-08): сервер задан,
+     место есть, а без связи файл встаёт в очередь, а не «ставится в обработку». */
+  if (!ORG.server) { e.target.value = ''; toast(t('Сервер организации не задан. Запись не начинается.')); return; }
+  if (diskBlocked()) { e.target.value = ''; toast(diskWhy()); return; }
   let left = files.length;
   const add = (file, sec) => {
     const d = new Date();
     FILES.unshift({
       id: 'u' + d.getTime().toString(36) + Math.round(sec),
       title: file.name.replace(/\.[^.]+$/, ''), ts: d.getTime(), sec, at: 0,
-      folder: S.scope.kind === 'folder' ? S.scope.value : null, src: 'Рабочий стол',
+      folder: S.scope.kind === 'folder' ? S.scope.value : null,
+      src: /aire|doway|диктофон/i.test(file.name) ? 'Диктофон' : 'Рабочий стол',
+      send: LINK.live ? 'sent' : 'queued',
       custom: [], transcript: [], transcriptEmpty: true, summaryEmpty: true
     });
+    if (!LINK.live) QUEUE.push({ id: 'q' + FILES[0].id, title: FILES[0].title, sec, state: 'wait' });
     applyLang();                                 // то же и для загруженных файлов
     if (--left === 0) {
       e.target.value = '';
-      toast(files.length === 1 ? t('Файл загружен, ставим в обработку')
+      if (!LINK.live) toast(t('Связи нет — файл встал в очередь отправки и уйдёт сам.'));
+      else toast(files.length === 1 ? t('Файл загружен, ставим в обработку')
         : files.length + ' ' + plZap(files.length) + ' ' + t('загружено, ставим в обработку'));
       render();
     }
@@ -4364,6 +4393,7 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('selectionchange', () => {
   const st = $('#seltool'), sel = document.getSelection();
+  if (!st) return;            // панели форматирования нет: правки расшифровки в требованиях не описаны (F-16)
   if (!sel || sel.isCollapsed || !sel.rangeCount) { st.classList.remove('is-open'); return; }
   const n = sel.anchorNode, host = n && (n.nodeType === 1 ? n : n.parentElement);
   if (!host || !host.closest('.fm-doc')) { st.classList.remove('is-open'); return; }

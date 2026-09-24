@@ -166,6 +166,7 @@ body {
 .fm-status__time { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
 .fm-status__spacer { flex: 1 1 auto; }
 .fm-status__icons { display: flex; align-items: center; gap: 5px; }
+[data-os="android"] .fm-island { width: 14px; height: 14px; top: 14px; }   /* Android: точка камеры, не остров iPhone (F-37) */
 .fm-island {
   position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
   width: 118px; height: 34px; border-radius: 20px; background: var(--neutral-130);
@@ -697,9 +698,9 @@ body {
 .m-hint__b { margin: 0; }
 .m-hint__src { display: flex; align-items: center; gap: var(--space-xs); margin: var(--size-3x) 0 0; color: var(--text-complimentary); }
 .m-hint__wait {
+  /* Строка состояния, а не карточка подсказки: пустую карточку Ц-5 запрещает (F-46). */
   display: flex; align-items: center; justify-content: center; gap: var(--space-m);
-  padding: var(--size-4x); border-radius: var(--radius-l);
-  background: var(--bg-container); color: var(--text-complimentary); text-align: center;
+  padding: var(--space-m) 0; background: none; color: var(--text-complimentary); text-align: center;
 }
 /* Крестик отмены на экране записи: отмена — единственное необратимое действие,
    поэтому она отдельно от остановки и уводит в подтверждение. */
@@ -728,6 +729,8 @@ body {
   border-radius: var(--radius-l); background: var(--warning-bg); color: var(--text-primary);
 }
 .m-warn--danger { background: var(--danger-bg); }
+/* Успех — не предупреждение: карточка привязана (F-26). */
+.m-warn--ok { background: var(--tag-green-bg); }
 </style>
 
 </head>
@@ -1560,7 +1563,7 @@ function screenMore() {
       <div class="m-group">
         <div class="m-row m-row--inset" data-go="devices">
           <span class="m-row__ico">${ic(I.device)}</span>
-          <span class="m-row__body m-body">${t('Очередь загрузки')}</span>
+          <span class="m-row__body m-body">${t('Диктофоны')}</span>
           <span class="m-row__right">
             <span class="m-row__val m-body m-num">${devOnline().length} <span>${t('из')}</span> ${DEVICES.length}</span>
             ${ic(I.go, 'fm-i--s m-row__chev')}</span>
@@ -1578,11 +1581,11 @@ function screenMore() {
 const micDevId = () => (DEVICES.find(d => d.name === M.micSrc) || {}).id || null;
 const micIsDevice = () => !!micDevId();
 const micFallback = () => { const d = devById(micDevId()); return !!d && d.link === 'off'; };
-/* Пишет диктофон AIREC. Живой поток с него независимая приёмка не прошла
-   (проверка 23.09.2026): живых подсказок и живого текста с диктофона экран
-   не показывает. AIREC-live — последний срез, после физической приёмки. */
+/* Пишет диктофон. По словам разработчика (24.09.2026) звук с выбранного источника —
+   микрофона телефона или диктофона — идёт на сервер в реальном времени, там же
+   транскрибация и подсказки: у диктофона экран ничем не отличается от телефона. */
 const micIsAirec = () => micIsDevice() && !micFallback();
-const hintsLive = () => LINK.live && SESSION.hintsOn && !micIsAirec();
+const hintsLive = () => LINK.live && SESSION.hintsOn && !M.rec.private;
 function recSourceLine() {
   if (micFallback()) return t('Диктофон не на связи — записывает микрофон телефона.');
   if (micIsDevice()) return t('Источник') + ': ' + t(M.micSrc);
@@ -1614,7 +1617,7 @@ function orgServerPane() {
 }
 const SET_PANES = {
   account: () => `<div class="m-group">
-      ${optRow('Учётная запись организации', 'a.ralovets@infomaximum.com', `<button class="fm-btn fm-btn--sm" data-passwd="1">${t('Сменить пароль')}</button>`)}
+      ${optRow('Учётная запись организации', 'a.ralovets@infomaximum.com', '')}
       ${optRow('Единый вход организации', 'Вход по корпоративной учётной записи', `<span class="fm-tag fm-tag--green">${t('Подключён')}</span>`)}
       ${optRow('Отпечаток или код', 'Спрашивать при открытии приложения', tglRow('bio', true))}
       ${optRow('Ключ устройства', 'Пароля нет: запросы подписывает ключ, его секретная половина не покидает телефон',
@@ -1702,7 +1705,7 @@ const SET_PANES = {
     </div>
     <div class="m-grouphead m-cap">${t('Что можно не записывать')}</div>
     <div class="m-group">
-      ${optRow('Приватный звонок', 'В API приёма звука этого поля нет. Здесь только показ политики организации.',
+      ${optRow('Приватная запись', 'Разрешено ли сделать запись приватной, задаёт организация.',
         `<span class="fm-tag">${t(ORG.privateCalls ? 'Разрешён' : 'Запрещён')}</span>`)}
     </div>`,
 
@@ -1758,6 +1761,8 @@ const devLinkTag = d => d.link === 'off'
 function devBlock(d) {
   const off = d.link === 'off';
   const recs = devRecs(d.id);
+  const cycleBtn = (key, val) => `<button class="fm-btn fm-btn--sm" data-devset="${d.id}:${key}">${t(val)}</button>`;
+  const tgl = key => `<button class="m-toggle ${d[key] ? 'is-on' : ''}" data-devset="${d.id}:${key}" aria-label="${t(key)}"></button>`;
   return `
     <div class="m-group">
       <div class="m-row m-row--inset" style="cursor:default">
@@ -1769,12 +1774,27 @@ function devBlock(d) {
         <span class="m-row__right">${devLinkTag(d)}</span>
       </div>
       <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body m-body">${t('Заряд')}</span>
+        <span class="m-row__right"><span class="m-row__val m-body m-num">${d.battery}%</span></span>
+      </div>
+      <div class="m-row m-row--inset" style="cursor:default">
+        <span class="m-row__body m-body">${t('Память')}</span>
+        <span class="m-row__right"><span class="m-row__val m-body m-num">${devMemText(d)}</span></span>
+      </div>
+      <div class="m-row m-row--inset" style="cursor:default">
         <span class="m-row__body m-body">${t('Новых записей')}</span>
         <span class="m-row__right"><span class="m-row__val m-body m-num">${recs.length}</span></span>
       </div>
     </div>
     ${off ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}
       <span>${t('Диктофон не на связи.')}</span></div>` : ''}
+    ${devLowBattery(d) ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}<span>${t('Диктофон почти разряжен.')}</span></div>` : ''}
+    ${devLowStorage(d) ? `<div class="m-warn m-cap">${ic(I.alert, 'fm-i--s')}<span>${t('В диктофоне почти не осталось места.')}</span></div>` : ''}
+    ${d.stuck ? `<div class="m-warn m-warn--danger m-cap">${ic(I.alert, 'fm-i--s')}
+      <span>${t('Сервер не принял запись с диктофона')}
+        <span style="display:flex;gap:var(--space-m);margin-top:var(--space-m);flex-wrap:wrap">
+          <button class="fm-btn fm-btn--sm" data-devretry="${d.id}">${t('Отправить снова')}</button>
+          <button class="fm-btn fm-btn--sm" data-devdiscard="${d.id}">${t('Удалить с этого телефона')}</button></span></span></div>` : ''}
     ${recs.length ? `<div class="m-group">
       ${recs.map(r => `<div class="m-row m-row--inset">
           <span class="m-row__body">
@@ -1784,16 +1804,30 @@ function devBlock(d) {
           </span>
         </div>`).join('')}
       </div>
-      <p class="m-pad m-cap m-dim">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>` : ''}`;
+      <p class="m-pad m-cap m-dim">${t('Записи с диктофона скачиваются на телефон и уходят на сервер компании автоматически.')}</p>` : ''}
+    ${off ? '' : `<div class="m-grouphead m-cap">${t('Настройки диктофона')}</div>
+    <div class="m-group">
+      ${optRow('Длина одной записи', 'Длинная встреча придёт несколькими записями', cycleBtn('len', DEV_LEN_TXT[d.len]))}
+      ${optRow('Шумоподавление', '', cycleBtn('noise', DEV_NOISE_TXT[d.noise]))}
+      ${optRow('Держать экран включённым', '', tgl('screenOn'))}
+      ${optRow('Ввозить записи автоматически', '', tgl('autoImport'))}
+      ${optRow('Стереть с диктофона после отправки', '', tgl('delAfter'))}
+    </div>`}
+    <div class="m-group">
+      ${optRow('Забыть устройство', 'Записи останутся на диктофоне.', `<button class="fm-btn fm-btn--sm" data-forgetdev="${d.id}">${t('Забыть')}</button>`)}
+    </div>`;
 }
 function screenDevices() {
   const on = devOnline().length;
-  return nav(t('Очередь загрузки'), { back: true })
+  return nav(t('Диктофоны'), { back: true })
     + `<div class="m-scroll" id="scroll">
-        ${large(t('Очередь загрузки'), phraseDevOnline(on, DEVICES.length))}
-        <p class="m-pad m-cap m-dim">${t('Эти записи ждут загрузки на сервер компании. Сначала их нужно перенести на телефон — тогда загрузка начнётся.')}</p>
+        ${large(t('Диктофоны'), phraseDevOnline(on, DEVICES.length))}
+        <p class="m-pad m-cap m-dim">${t('Записи с диктофона скачиваются на телефон и уходят на сервер компании автоматически.')}</p>
         ${DEVICES.map(devBlock).join('')}
         ${lostDeviceHtml('m')}
+        <div class="m-pad" style="margin-bottom:var(--size-5x)">
+          <button class="fm-btn fm-btn--block" data-sheet="adddev">${t('Подключить диктофон')}</button>
+        </div>
         <div class="m-bottom"></div>
       </div>`;
 }
@@ -1921,6 +1955,9 @@ const SHEETS = {
         <button class="fm-btn fm-btn--danger" data-confirmyes="1">${t(c.yes || 'Да')}</button>
       </div>`;
   },
+  adddev: () => sheet(t('Подключить диктофон'), [
+    `<div class="m-pad m-sub" style="display:flex;align-items:center;gap:var(--space-m)">${ic(I.spin, 'fm-i--s')} ${t('Ищем диктофоны рядом')}</div>`,
+    `<p class="m-pad m-cap m-dim">${t('Рядом новых диктофонов нет. Включите диктофон и поднесите его к телефону.')}</p>`]),
   askscope: () => sheet(t('Где искать'), [item(I.folder, 'По всем записям', 'data-askfolder=""', !M.ask.folder)]
     .concat(FOLDERS.map(f => item(I.folder, f.name, `data-askfolder="${esc(f.name)}"`, M.ask.folder === f.name)))),
   addtpl: () => sheet(t('Шаблон разбора'), TEMPLATES.map(tpl => item(I.tpl, tpl.t, `data-addtpl="${esc(tpl.t)}"`))),
@@ -2080,12 +2117,13 @@ function recStart(auto) {
     SESSION.recCard = CARDS[0];
     SESSION.recBind = 'calendar';
   }
-  M.rec = { on: true, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: auto || null, hints: [] };
+  M.rec = { on: true, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: auto || null, hints: [], private: false };
   recTick(true); render();
 }
 /* Отмена — единственное необратимое действие: остановка сохраняет запись,
    отмена её удаляет. Поэтому только через подтверждение. */
 function recCancel(falseAlarm) {
+  recClearSessionCard();
   M.rec = { on: false, paused: false, sec: 0, saved: null, lines: [], marks: [], auto: null, hints: [] };
   recTick(false); render();
   toast(falseAlarm ? 'Ложная тревога: запись удалена, на сервер не ушла'
@@ -2096,17 +2134,20 @@ function recStop() {
   const seg = M.rec.lines.map(l => T(fmtTotal(Math.max(0, l.at - REC_STEP)), l.who, l.role, l.text));
   const n = recNewFile({
     id: 'r' + d.getTime().toString(36), title: t('Запись от') + ' ' + fmtDate(d.getTime()),
-    ts: d.getTime(), sec, at: 0, folder: null, src: 'Телефон', custom: [],
-    transcript: seg, transcriptEmpty: seg.length ? undefined : true, summaryEmpty: true,
+    ts: d.getTime(), sec, at: 0, folder: null, src: micIsAirec() ? 'Диктофон' : 'Телефон', custom: [],
+    /* Без связи живой текст не показывался (текст делает сервер), значит и в записи его нет. */
+    transcript: LINK.live ? seg : [], transcriptEmpty: LINK.live && seg.length ? undefined : true, summaryEmpty: true,
     card: SESSION.recCard ? { id: SESSION.recCard.id, name: SESSION.recCard.name } : null,
-    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null
+    bind: SESSION.recCard ? (SESSION.recBind || 'picked') : null,
+    ...(M.rec.private ? { private: true, send: 'private', card: null, bind: null } : {})
   });
   FILES.unshift(n);
+  recClearSessionCard();                         // карточка была на ЭТУ запись (F-01)
   if (M.rec.marks.length) M.marks[n.id] = M.rec.marks.slice();
   applyLang();
   /* Связи нет — запись встаёт в очередь отправки, а не теряется. */
-  if (!LINK.live) QUEUE.push({ id: 'q' + n.id, title: n.title, sec, state: 'wait' });
-  M.rec = { on: false, paused: false, sec: 0, saved: n.id, lines: [], marks: [], auto: null, hints: [] };
+  if (!LINK.live && !n.private) QUEUE.push({ id: 'q' + n.id, title: n.title, sec, state: 'wait' });
+  M.rec = { on: false, paused: false, sec: 0, saved: n.id, lines: [], marks: [], auto: null, hints: [], private: false };
   recTick(false); render();
 }
 function recOverlay() {
@@ -2117,7 +2158,6 @@ function recOverlay() {
     const lines = M.rec.lines;
     const mand = isMandatory();
     const last = hintsLive() ? M.rec.hints[M.rec.hints.length - 1] : null;
-    const airec = micIsAirec();
     const prof = HINT_PROFILES.find(x => x.id === ORG.hintProfile) || HINT_PROFILES[0];
     return `
     <div class="m-rec">
@@ -2143,16 +2183,20 @@ function recOverlay() {
         <span>${t('Режим организации: запись обязательна. Пауза и отмена выключены.')}</span></div>` : ''}
       <!-- Карточка клиента для этой записи: на главной её нет (там плашка читалась
            как ошибка без записи), выбрать можно здесь, во время записи. -->
-      ${recSessionCardHtml('m')}
+      ${M.rec.private ? '' : recSessionCardHtml('m')}
       <!-- ГЛАВНОЕ ОТЛИЧИЕ ПРОДУКТА: подсказка приходит во время разговора.
            Показана последняя, остальные — по нажатию, шторкой. -->
+      ${ORG.privateCalls || M.rec.private ? `<div class="m-hintbox" style="padding-bottom:var(--size-3x)">
+        ${M.rec.private
+          ? `<div class="m-hint__wait m-cap">${ic(I.lock, 'fm-i--s')}<span>${t('Идёт приватная запись')}: ${t('Приватная запись остаётся на этом устройстве и на сервер не уходит.')}</span></div>`
+          : `<button class="fm-btn fm-btn--sm" data-private="1">${ic(I.lock, 'fm-i--s')} ${t('Сделать приватной')}</button>`}
+      </div>` : ''}
       <div class="m-hintbox">
-        ${airec ? `<div class="m-hint__wait m-cap">${ic(I.alert, 'fm-i--s')}
-            <span>${t('Живых подсказок с диктофона нет: живой поток AIREC не прошёл приёмку.')}</span></div>`
-        : `<div style="display:flex;align-items:center;gap:var(--space-m);margin:0 0 var(--size-3x)">
+        ${M.rec.private ? '' : `<div style="display:flex;align-items:center;gap:var(--space-m);margin:0 0 var(--size-3x)">
           <span class="m-cap" style="flex:1 1 auto">${t(!SESSION.hintsOn ? 'Подсказки выключены' : LINK.live ? 'Подсказки включены' : 'Живых подсказок нет')}</span>
           <button class="fm-btn fm-btn--sm" data-hintstog="1">${t(SESSION.hintsOn ? 'Выкл' : 'Вкл')}</button>
         </div>
+        ${hintStatusKey() ? `<p class="m-cap m-dim" style="margin:0 0 var(--size-3x)">${t(hintStatusKey())}</p>` : ''}
         ${last
           ? `<button class="m-hint" data-sheet="hints">
               <div class="m-hint__head">
@@ -2173,7 +2217,7 @@ function recOverlay() {
                 : 'Связи с сервером нет: запись доедет, живых подсказок нет')}</span></div>`}`}
       </div>
       <div class="m-rec__live" id="recLive">
-        ${airec ? `<div class="m-rec__wait m-sub">${t('Текст появится, когда запись с диктофона дойдёт до сервера')}</div>`
+        ${!LINK.live ? `<div class="m-rec__wait m-sub">${t('Связи с сервера нет: текст соберётся после обработки')}</div>`
           : lines.length ? lines.map((l, i) => `<p class="m-rec__line m-body">
             <b>${esc(l.who)}</b><br>${esc(l.text)}</p>`).join('')
           : `<div class="m-rec__wait m-sub">${ic(I.spin, 'fm-i--s')} ${t('Слушаем — текст появится, как только начнут говорить')}</div>`}
@@ -2205,14 +2249,14 @@ function recOverlay() {
       <div class="m-rec__done">
         <div class="m-rec__head m-sub">${ic(I.check, 'fm-i--s')} ${t('Запись сохранена')}</div>
         <div class="m-rec__time m-num">${f ? f.total : '—'}</div>
-        <p class="m-rec__note m-cap" style="margin:0">${t('Расшифровка уже есть')}</p>
+        <p class="m-rec__note m-cap" style="margin:0">${t(LINK.live ? 'Расшифровка уже есть' : 'Расшифровка соберётся после обработки')}</p>
         <p class="m-rec__note m-cap" style="margin:0">${t(LINK.live
           ? 'Запись уходит на сервер организации.'
           : 'Связи нет — запись встала в очередь отправки и уйдёт сама.')}</p>
         ${f ? crmBannerHtml(f, 'm') : ''}
         ${f ? recCardActionsHtml(f.id, 'm') : ''}
         <div>
-          <button class="fm-btn fm-btn--primary" data-file="${M.rec.saved}">${t('Открыть запись')}</button>
+          <button class="fm-btn ${f && recNeedsCard(f) ? '' : 'fm-btn--primary'}" data-file="${M.rec.saved}">${t('Открыть запись')}</button>
           <div style="height:var(--size-3x)"></div>
           <button class="fm-btn" data-recnew="1">${t('Записать ещё')}</button>
         </div>
@@ -2449,6 +2493,13 @@ document.addEventListener('click', e => {
   }
   if (hit('[data-recstop]')) { recStop(); return; }
   if (hit('[data-recnew]')) { recStart(); return; }
+  if (hit('[data-private]')) {
+    askConfirm({ title: 'Сделать эту запись приватной?',
+      body: 'Запись останется только на этом устройстве, а всё, что уже ушло на сервер, будет отозвано.',
+      yes: 'Сделать приватной', no: 'Отмена' },
+      () => { M.rec.private = true; M.rec.hints = []; render(); });
+    return;
+  }
   if (hit('[data-hintstog]')) {
     SESSION.hintsOn = !SESSION.hintsOn;
     if (!SESSION.hintsOn) M.rec.hints = [];
@@ -2781,6 +2832,16 @@ document.addEventListener('click', e => {
   /* --- настройки --- */
   const tg = hit('[data-toggle]');
   if (tg) { M.tgl[tg.dataset.toggle] = !tg.classList.contains('is-on'); tg.classList.toggle('is-on'); return; }
+  const ds = hit('[data-devset]');
+  if (ds) { const [id, key] = ds.dataset.devset.split(':'); devCycle(id, key); render(); return; }
+  const dr = hit('[data-devretry]'); if (dr) { devRetry(dr.dataset.devretry); render(); return; }
+  const dd = hit('[data-devdiscard]'); if (dd) { devDiscard(dd.dataset.devdiscard); render(); return; }
+  const fg = hit('[data-forgetdev]');
+  if (fg) {
+    askConfirm({ title: 'Забыть это устройство?', body: 'Записи останутся на диктофоне.', yes: 'Забыть', no: 'Оставить' },
+      () => { const d = devById(fg.dataset.forgetdev); if (d && M.micSrc === d.name) M.micSrc = 'Микрофон телефона'; devForget(fg.dataset.forgetdev); render(); });
+    return;
+  }
   if (hit('[data-passwd]')) { toast(t('Ссылка для смены пароля отправлена на') + ' a.ralovets@infomaximum.com'); return; }
   if (hit('[data-askmore]')) { toast('Заявка на расширение лимита отправлена администратору'); return; }
   if (hit('[data-getapp]')) { toast('Установщик скачивается с сервера организации'); return; }
@@ -2863,6 +2924,8 @@ function paintPlaque() {
   if (q.get('disk') === 'full') DISK.freeMin = 12;
   if (q.get('dev') === 'off') DEVICES.forEach(d => { d.link = 'off'; });
   if (q.get('mic')) M.micSrc = q.get('mic');
+  if (q.get('hintstate')) ORG.hintState = q.get('hintstate');
+  if (q.get('import') === 'stuck') { const d = DEVICES[0]; if (d) d.stuck = true; }
   if (q.get('q')) { M.q = q.get('q'); M.screen = 'search'; }
   paintPlaque();
   render();
